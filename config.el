@@ -74,10 +74,10 @@
 
 (setq tramp-default-method "ssh")
 
-(after! tramp
-  (setenv "SHELL" "/bin/bash")
-  (setq tramp-shell-prompt-pattern "\\(?:^\\|
-\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
+;; (after! tramp
+;;   (setenv "SHELL" "/bin/bash")
+;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|
+;; \\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
 
 (setq yas-triggers-in-field t)
 
@@ -429,8 +429,8 @@
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
 
-;; (after! python
-  ;; (set-pretty-symbols! 'python-mode nil))
+(after! python
+  (set-pretty-symbols! 'python-mode nil))
 
 ;; (setq +pretty-code-enabled-modes '(not python-mode))
 

@@ -1,4 +1,4 @@
-# Created 2022-10-08 Sat 11:36
+# Created 2022-10-08 Sat 11:43
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+property: header-args :tangle config.el
@@ -64,8 +64,6 @@ This is the Doom Emacs configuration of Dylan Morgan
 - Email: dbmorgan98@gmail
 
 That being said, this is blatantly plagiarised from [[https://tecosaur.github.io/emacs-config/config.html#super-agenda][tecosaur's config]]
-
-Remember that 'doom sync' does _not_ need to be run after editing this file
 
 * Setup
 ** Lexical Binding
@@ -215,10 +213,10 @@ Faster than the default scp (for small files)
 Improve tramp prompt recognition
 
 #+begin_src emacs-lisp
-(after! tramp
-  (setenv "SHELL" "/bin/bash")
-  (setq tramp-shell-prompt-pattern "\\(?:^\\|
-\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
+;; (after! tramp
+;;   (setenv "SHELL" "/bin/bash")
+;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|
+;; \\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
 #+end_src
 
 Nested snippets
@@ -768,8 +766,8 @@ Disable prettify symbols in python
 I've also tried to keep ligatures but this isn't yet working
 
 #+begin_src emacs-lisp
-;; (after! python
-  ;; (set-pretty-symbols! 'python-mode nil))
+(after! python
+  (set-pretty-symbols! 'python-mode nil))
 
 ;; (setq +pretty-code-enabled-modes '(not python-mode))
 
