@@ -770,8 +770,8 @@ Disable prettify symbols in python
 I've also tried to keep ligatures but this isn't yet working
 
 #+begin_src emacs-lisp
-(after! python
-  (set-pretty-symbols! 'python-mode nil))
+;; (after! python
+;;   (set-pretty-symbols! 'python-mode nil))
 
 ;; (setq +pretty-code-enabled-modes '(not python-mode))
 

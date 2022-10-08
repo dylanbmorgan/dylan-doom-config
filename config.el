@@ -429,8 +429,8 @@
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
 
-(after! python
-  (set-pretty-symbols! 'python-mode nil))
+;; (after! python
+;;   (set-pretty-symbols! 'python-mode nil))
 
 ;; (setq +pretty-code-enabled-modes '(not python-mode))
 
