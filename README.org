@@ -1,6 +1,6 @@
+# Created 2022-10-08 Sat 11:36
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
-#+email: dbmorgan98@gmail.com
 #+property: header-args :tangle config.el
 #+export_file_name: ./README.org
 #+startup: content
@@ -60,8 +60,8 @@ GNU Emacs is an extendable and highly customizable text editor. It is based on a
 Official documentation: https://www.gnu.org/software/emacs/#Manuals
 
 This is the Doom Emacs configuration of Dylan Morgan
-+ Github: https://github.com/dylanbmorgan
-+ Email: dbmorgan98@gmail
+- Github: https://github.com/dylanbmorgan
+- Email: dbmorgan98@gmail
 
 That being said, this is blatantly plagiarised from [[https://tecosaur.github.io/emacs-config/config.html#super-agenda][tecosaur's config]]
 
@@ -78,9 +78,9 @@ I think this has to go at the top of the file (almost like a shebang)
 #+end_src
 
 ** Buffers
-+ I’d much rather have my new buffers in org-mode than fundamental-mode
-+ Nicer default buffer names
-+ Only include the buffer name in the title, and then if applicable, the project folder
+- I’d much rather have my new buffers in org-mode than fundamental-mode
+- Nicer default buffer names
+- Only include the buffer name in the title, and then if applicable, the project folder
   - Also mark if the file has unsaved changes
 
 #+begin_src emacs-lisp
@@ -127,16 +127,16 @@ Integrate books into emacs
 #+end_src
 
 ** General
-+ Delete files to trash
-+ Stretch cursor to the glyph width
-+ Raise undo limit to 80MB
-+ Whether actions are undone in several steps
-+ Nobody likes to lose work
-+ How many seconds passwords are cached
-+ Controls if scroll commands move point to keep its screen position unchanged
-+ Number of lines of margin at the top and bottom of a window
-+ Iterate through CamelCase words
-+ Replace I-search binding with swiper
+- Delete files to trash
+- Stretch cursor to the glyph width
+- Raise undo limit to 80MB
+- Whether actions are undone in several steps
+- Nobody likes to lose work
+- How many seconds passwords are cached
+- Controls if scroll commands move point to keep its screen position unchanged
+- Number of lines of margin at the top and bottom of a window
+- Iterate through CamelCase words
+- Replace I-search binding with swiper
 
 #+begin_src emacs-lisp
 (setq-default
@@ -203,7 +203,6 @@ opened first and enable project caching
 (map! :leader
       (:prefix-map ("p" . "project")
        :desc "Search project a" "H" #'counsel-projectile-ag))
-
 #+end_src
 
 ** Tramp
@@ -238,14 +237,14 @@ Smart parentheses
 #+end_src
 
 ** Windows
-+ Make Doom emacs ask which buffer to see after splitting a window.
-+ Take new window space from all other windows (not just current).
-+ Window rotation is nice, and can be found under SPC w r and SPC w R.
+- Make Doom emacs ask which buffer to see after splitting a window.
+- Take new window space from all other windows (not just current).
+- Window rotation is nice, and can be found under SPC w r and SPC w R.
   - Layout rotation is also nice though. Let’s stash this under SPC w a.
 
-+ We could also do with adding the missing arrow-key variants of the window navigation/swapping commands.
+- We could also do with adding the missing arrow-key variants of the window navigation/swapping commands.
 
-+ I also like to be able to preview buffers when I switch them.
+- I also like to be able to preview buffers when I switch them.
 
 #+begin_src emacs-lisp
 (setq evil-vsplit-window-right t
@@ -283,10 +282,10 @@ Smart parentheses
 * Appearance
 ** Fonts
 Doom exposes five (optional) variables for controlling fonts in Doom. Here are the three important ones:
-+ `doom-font'
-+ `doom-variable-pitch-font'
-+ `doom-big-font' -- used for `doom-big-font-mode'
-  - use this for presentations or streaming. 
+- `doom-font'
+- `doom-variable-pitch-font'
+- `doom-big-font' -- used for `doom-big-font-mode'
+  - use this for presentations or streaming.
 
 They all accept either a font-spec, font string ("Input Mono-12"), or xlfd font string. You generally only need doom-font and doom-variable-pitch-font.
 
@@ -425,9 +424,6 @@ Better syntax highlighting for code
 (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
 #+end_src
 
-# *** TODO More Syntax Highlighting
-# I really like to have a lot of syntax highlighting
-
 *** Github Copilot
 
 #+begin_src emacs-lisp
@@ -558,8 +554,8 @@ See [[https://tecosaur.github.io/emacs-config/config.html#transc   lusion][tecos
 
 *** CDLaTeX
 Set new environments for:
-+ Non-numbered equations
-+ Non-numbered equations with bmatrix
+- Non-numbered equations
+- Non-numbered equations with bmatrix
 
 Then, set shortcuts for these environments
 
@@ -806,7 +802,7 @@ Set filepath for org agenda
 
 *** TODO Super Agenda
 
- (see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
+(see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
 
 ** TODO Babel
 ** TODO Exporting
@@ -814,7 +810,7 @@ See [[https://tecosaur.github.io/emacs-config/config.html#exporting][tecosaur ag
 
 ** File Conversions
 Leaving org is sad. Thankfully, there's a way around this!
-+ Package installed in packages.el
+- Package installed in packages.el
 
 #+begin_src emacs-lisp
 (use-package! org-pandoc-import :after org)
@@ -869,14 +865,14 @@ Provide different options for default headers for emacs org files
 #+end_src
 
 ** General
-+ Default file location
+- Default file location
   - If you use `org' and don't want your org files in the default location below,
     change `org-directory'. It must be set before org loads!
 
-+ It's convenient to have properties inherited
-+ Alphabetical lists
-+ Export processes in external emacs process
-+ Try to not accidentally do weird stuff in invisible regions
+- It's convenient to have properties inherited
+- Alphabetical lists
+- Export processes in external emacs process
+- Try to not accidentally do weird stuff in invisible regions
 
 #+begin_src emacs-lisp
 (setq org-directory "~/Documents/org/"
@@ -1389,9 +1385,9 @@ Eshell is an emacs 'shell' written in elisp.
       "e s" 'eshell)
 #+end_src
 
-+ ‘eshell-syntax-highlighting’ – adds fish/zsh-like syntax highlighting.
-+ ‘eshell-rc-script’ – your profile for eshell; like a bashrc for eshell.
-+ ‘eshell-aliases-file’ – sets an aliases file for the eshell.
+- ‘eshell-syntax-highlighting’ – adds fish/zsh-like syntax highlighting.
+- ‘eshell-rc-script’ – your profile for eshell; like a bashrc for eshell.
+- ‘eshell-aliases-file’ – sets an aliases file for the eshell.
 
 #+begin_src emacs-lisp
 (use-package eshell-syntax-highlighting
@@ -1469,17 +1465,17 @@ Edit: I actually don't like this, but will just keep it around for now.
 * Help
 Here are some additional functions/macros that could help you configure Doom:
 
- - `load!' for loading external *.el files relative to this one
- - `use-package!' for configuring packages
- - `after!' for running code after a package has loaded
- - `add-load-path!' for adding directories to the `load-path', relative to
-   this file. Emacs searches the `load-path' when you load packages with
-   `require' or `use-package'.
- - `map!' for binding new keys
+- `load!' for loading external *.el files relative to this one
+- `use-package!' for configuring packages
+- `after!' for running code after a package has loaded
+- `add-load-path!' for adding directories to the `load-path', relative to
+  this file. Emacs searches the `load-path' when you load packages with
+  `require' or `use-package'.
+- `map!' for binding new keys
 
- To get information about any of these functions/macros, move the cursor over
- the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
- This will open documentation for it, including demos of how they are used.
+To get information about any of these functions/macros, move the cursor over
+the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+This will open documentation for it, including demos of how they are used.
 
- You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
- they are implemented.
+You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
+they are implemented.
