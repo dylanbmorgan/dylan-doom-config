@@ -1,4 +1,4 @@
-# Created 2022-10-09 Sun 10:04
+# Created 2022-10-09 Sun 10:05
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+property: header-args :tangle config.el
@@ -59,7 +59,7 @@
 GNU Emacs is an extendable and highly customizable text editor. It is based on an Emacs Lisp interpreter with extensions for text editing. Emacs has been extended in essentially all areas of computing, giving rise to a vast array of packages supporting, e.g., email, IRC and XMPP messaging, spreadsheets, remote server editing, and much more. Emacs includes extensive documentation on all aspects of the system, from basic editing to writing large Lisp programs. It has full Unicode support for nearly all human languages.
 
 Official documentation: https://www.gnu.org/software/emacs/#Manuals
-Doom Emacs Github repository: [[https://github.com/doomemacs/doomemacs]
+Doom Emacs Github repository: [[https://github.com/doomemacs/doomemacs]]
 
 This is the Doom Emacs configuration of Dylan Morgan
 - Github: https://github.com/dylanbmorgan
