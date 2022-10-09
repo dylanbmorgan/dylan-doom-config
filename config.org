@@ -69,7 +69,7 @@ That being said, this is blatantly plagiarised from [[https://tecosaur.github.io
 
 ** Install Instructions
 1. Follow the instructions to install Doom Emacs from [[https://github.com/doomemacs/doomemacs/blob/master/docs/index.org][here]]
-2. ~cd ~~/.doom.d/~
+2. ~cd ~/.doom.d/~
 3. ~git clone https://github.com/dylanbmorgan/dylan-doom-config~
 4. Install the necessary programs when you inevitably get lots of errors!
 5. Waste lots of time learning how to use emacs, tweaking the configuration yourself, get frustrated, and ultimately return to using vim or VScode
