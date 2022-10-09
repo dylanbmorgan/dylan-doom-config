@@ -1,4 +1,4 @@
-# Created 2022-10-08 Sat 11:43
+# Created 2022-10-09 Sun 10:01
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+property: header-args :tangle config.el
@@ -7,6 +7,7 @@
 
 * Table of Contents :toc:
 - [[#introduction][Introduction]]
+  - [[#install-instructions][Install Instructions]]
 - [[#setup][Setup]]
   - [[#lexical-binding][Lexical Binding]]
   - [[#buffers][Buffers]]
@@ -58,12 +59,20 @@
 GNU Emacs is an extendable and highly customizable text editor. It is based on an Emacs Lisp interpreter with extensions for text editing. Emacs has been extended in essentially all areas of computing, giving rise to a vast array of packages supporting, e.g., email, IRC and XMPP messaging, spreadsheets, remote server editing, and much more. Emacs includes extensive documentation on all aspects of the system, from basic editing to writing large Lisp programs. It has full Unicode support for nearly all human languages.
 
 Official documentation: https://www.gnu.org/software/emacs/#Manuals
+Doom Emacs Github repository: [[https://github.com/doomemacs/doomemacs]
 
 This is the Doom Emacs configuration of Dylan Morgan
 - Github: https://github.com/dylanbmorgan
-- Email: dbmorgan98@gmail
+- Email: dbmorgan98@gmail.com
 
 That being said, this is blatantly plagiarised from [[https://tecosaur.github.io/emacs-config/config.html#super-agenda][tecosaur's config]]
+
+** Install Instructions
+1. Follow the instructions to install Doom Emacs from [[https://github.com/doomemacs/doomemacs/blob/master/docs/index.org][here]]
+2. ~cd ~~/.doom.d/~
+3. ~git clone https://github.com/dylanbmorgan/dylan-doom-config~
+4. Install the necessary programs when you inevitably get lots of errors!
+5. Waste lots of time learning how to use emacs, tweaking the configuration yourself, get frustrated, and ultimately return to using vim or VScode
 
 * Setup
 ** Lexical Binding
@@ -766,8 +775,8 @@ Disable prettify symbols in python
 I've also tried to keep ligatures but this isn't yet working
 
 #+begin_src emacs-lisp
-(after! python
-  (set-pretty-symbols! 'python-mode nil))
+;; (after! python
+;;   (set-pretty-symbols! 'python-mode nil))
 
 ;; (setq +pretty-code-enabled-modes '(not python-mode))
 
