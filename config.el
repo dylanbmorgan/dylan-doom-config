@@ -32,7 +32,8 @@
 
 (setq-default
  delete-by-moving-to-trash t
- x-stretch-cursor t)
+ x-stretch-cursor t
+ global-visual-line-mode t)
 
 (setq undo-limit 80000000
       evil-want-fine-undo t
@@ -187,14 +188,19 @@
 
 (setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
 
+(use-package autothemer
+  :ensure t)
+
 (defun random-choice (items)
   (let* ((size (length items))
          (index (random size)))
     (nth index items)))
 
-(setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf))) ; doom-tokyo-night)))
+(setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
 
-(setq doom-theme random-theme)
+(cond ((string= random-theme "catppuccin-1") (setq doom-theme 'catppuccin-macchiato))
+      ((string= random-theme "catppuccin-2") (setq doom-theme 'catppuccin-frappe))
+      (t (setq doom-theme random-theme)))
 
 ;; (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
 ;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
@@ -207,12 +213,44 @@
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
   :bind (("C-TAB" . 'copilot-accept-completion-by-word)
-         ("C-<tab>" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
-         ("<tab>" . 'copilot-accept-completion)
-         ("TAB" . 'copilot-accept-completion)))
+         ("S-TAB" . 'copilot-accept-completion-by-line)
+         ("M-TAB" . 'copilot-accept-completion)))
 
-(setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node")
+(when (string= (system-name) "apollo")
+  (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
+
+(when (string= (system-name) "maccie")
+  (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node"))
+
+;; (add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
+;; (setq highlight-indent-guides-method (character))
+
+;; Uncomment the next line if you are using this from source
+;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
+(require 'lsp-docker)
+
+(defvar lsp-docker-client-packages
+    '(lsp-css lsp-clients lsp-bash lsp-go lsp-pyls lsp-html lsp-typescript
+      lsp-terraform lsp-clangd))
+
+(setq lsp-docker-client-configs
+    '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
+      (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
+      (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
+      ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
+      (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
+      (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")
+      (:server-id pyls :docker-server-id pyls-docker :server-command "pyls")))
+      ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
+
+(require 'lsp-docker)
+(lsp-docker-init-clients
+  :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
+  :client-packages lsp-docker-client-packages
+  :client-configs lsp-docker-client-configs)
+
+;; TODO
 
 (use-package lsp-mode
   :commands lsp
@@ -227,7 +265,7 @@
 
 ;; (add-hook 'f90-mode-hook 'eglot-ensure)
 
-(load-file "~/Applications/fortran-tags/fortran-tags.el")
+;; (load-file "~/Applications/fortran-tags/fortran-tags.el")
 
 (setq fortran-continuation-string "&")
 (setq fortran-do-indent 2)
@@ -243,6 +281,8 @@
 
 (setq auto-mode-alist
       (cons '("\\.F90$" . f90-mode) auto-mode-alist))
+(setq auto-mode-alist
+      (cons '("\\.pf$" . f90-mode) auto-mode-alist))
 (setq auto-mode-alist
       (cons '("\\.pf$" . f90-mode) auto-mode-alist))
 (setq auto-mode-alist
@@ -329,7 +369,8 @@
 (use-package lsp-ui
     :ensure t
     :after (lsp-mode)
-    :init (setq lsp-ui-doc-enable t
+    :init (setq lsp-enable-symbol-highlighting t
+                lsp-ui-doc-enable t
                 lsp-ui-sideline-enable t
                 lsp-ui-sideline-mode 1
                 lsp-ui-sideline-delay 1
@@ -373,6 +414,8 @@
 
 (setq lsp-auto-guess-root t)
 
+;; (lsp-treemacs-sync-mode 1)
+
 ;; TODO configure over tramp
 
 ;; (lsp-register-client
@@ -386,7 +429,7 @@
 (setq grip-preview-use-webkit t)
 
 (setq grip-github-user "grip-github-user")
-(setq grip-github-password "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")
+(setq grip-github-password "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")
 
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
@@ -398,6 +441,7 @@
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 
+;; TODO limit this to only python buffers
 (use-package! python-black
   :demand t
   :after python
@@ -436,6 +480,18 @@
 
 ;; (add-hook 'python-mode-hook (lambda ()
 ;;     (setq +pretty-code-symbols-alist '(python-mode nil ))))
+
+;; TODO limit this to only python buffers
+;; (use-package! poetry
+;;   :demand t
+;;   :after python
+;;   :config
+;;   ;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
+;;   (map! :leader
+;;         (:prefix-map ("m" . "<localleader>")
+;;          (:prefix ("p" . "poetry")
+;;           :desc "Add dependency" "a" #'poetry-add
+;;           :desc "Install dependencies" "i" #'poetry-install-install))))
 
 (use-package python
   :after (python-mode)
@@ -911,24 +967,24 @@ Return nil otherwise."
 ;;            (require 'fish-completion nil t))
 ;;   (global-fish-completion-mode))
 
-;; (defun with-face (str &rest face-plist)
-;;    (propertize str 'face face-plist))
+ ;; (defun with-face (str &rest face-plist)
+ ;;    (propertize str 'face face-plist))
 
-;;  (defun shk-eshell-prompt ()
-;;    (let ((header-bg "#fff"))
-;;      (concat
-;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
-;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
-;;       (with-face
-;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
-;;        :background header-bg)
-;;       (with-face "\n" :background header-bg)
-;;       (with-face user-login-name :foreground "blue")
-;;       "@"
-;;       (with-face "localhost" :foreground "green")
-;;       (if (= (user-uid) 0)
-;;           (with-face " #" :foreground "red")
-;;         " $")
-;;       " ")))
-;;  (setq eshell-prompt-function 'shk-eshell-prompt)
-;;  (setq eshell-highlight-prompt nil)
+ ;;  (defun shk-eshell-prompt ()
+ ;;    (let ((header-bg "#fff"))
+ ;;      (concat
+ ;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
+ ;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
+ ;;       (with-face
+ ;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
+ ;;        :background header-bg)
+ ;;       (with-face "\n" :background header-bg)
+ ;;       (with-face user-login-name :foreground "blue")
+ ;;       "@"
+ ;;       (with-face "localhost" :foreground "green")
+ ;;       (if (= (user-uid) 0)
+ ;;           (with-face " #" :foreground "red")
+ ;;         " $")
+ ;;       " ")))
+ ;;  (setq eshell-prompt-function 'shk-eshell-prompt)
+ ;;  (setq eshell-highlight-prompt nil)
