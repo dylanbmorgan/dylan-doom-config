@@ -443,7 +443,7 @@
 (add-hook 'markdown-mode-hook #'grip-mode)
 
 (when (string= (system-name) "maccie")
-  (setq grip-binary-path "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node/grip"))
+  (setq grip-binary-path "/opt/homebrew/bin/grip"))
 (when (string= (system-name) "apollo")
   (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
 
@@ -526,6 +526,12 @@
 
 (setq org-agenda-files '("~/Documents/org"))
 
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "org-export-to-org"
+      "E" 'org-org-export-to-org)
+
 (use-package! org-pandoc-import :after org)
 
 (defun org-literate-config ()
@@ -559,6 +565,16 @@
           "#+STARTUP: content\n\n"
           "* Table of Contents :toc:\n\n"))
 
+(defun org-header-with-readme ()
+  (interactive)
+  (setq title (read-string "Title: "))
+  (insert "#+TITLE: " title " \n"
+          "#+AUTHOR: Dylan Morgan\n"
+          "#+EMAIL: dbmorgan98@gmail.com\n"
+          "#+STARTUP: content\n"
+          "#+EXPORT_FILE_NAME: ./README.org\n\n"
+          "* Table of Contents :toc:\n\n"))
+
 (map! :map org-mode-map
       :after org
       :localleader
@@ -568,7 +584,9 @@
       :desc "note taking"
       "n" 'org-header-notes
       :desc "notes custom property"
-      "p" 'org-header-notes-custom-property)
+      "p" 'org-header-notes-custom-property
+      :desc "header with readme"
+      "r" 'org-header-with-readme)
 
 (setq org-directory "~/Documents/org/"
       org-use-property-inheritance t

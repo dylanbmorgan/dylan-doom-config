@@ -796,7 +796,7 @@ Automatically open live preview when opening a markdown file
 (add-hook 'markdown-mode-hook #'grip-mode)
 
 (when (string= (system-name) "maccie")
-  (setq grip-binary-path "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node/grip"))
+  (setq grip-binary-path "/opt/homebrew/bin/grip"))
 (when (string= (system-name) "apollo")
   (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
 
@@ -937,6 +937,16 @@ Set filepath for org agenda
 ** TODO Exporting
 See [[https://tecosaur.github.io/emacs-config/config.html#exporting][tecosaur again]]
 
+I like to export markdown files written in org as README.org. I'm creating a shortcut to use for this in future.
+
+#+begin_src emacs-lisp
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "org-export-to-org"
+      "E" 'org-org-export-to-org)
+#+end_src
+
 ** File Conversions
 Leaving org is sad. Thankfully, there's a way around this!
 + Package installed in packages.el
@@ -980,6 +990,16 @@ Provide different options for default headers for emacs org files
           "#+STARTUP: content\n\n"
           "* Table of Contents :toc:\n\n"))
 
+(defun org-header-with-readme ()
+  (interactive)
+  (setq title (read-string "Title: "))
+  (insert "#+TITLE: " title " \n"
+          "#+AUTHOR: Dylan Morgan\n"
+          "#+EMAIL: dbmorgan98@gmail.com\n"
+          "#+STARTUP: content\n"
+          "#+EXPORT_FILE_NAME: ./README.org\n\n"
+          "* Table of Contents :toc:\n\n"))
+
 (map! :map org-mode-map
       :after org
       :localleader
@@ -989,7 +1009,9 @@ Provide different options for default headers for emacs org files
       :desc "note taking"
       "n" 'org-header-notes
       :desc "notes custom property"
-      "p" 'org-header-notes-custom-property)
+      "p" 'org-header-notes-custom-property
+      :desc "header with readme"
+      "r" 'org-header-with-readme)
 #+end_src
 
 ** General
