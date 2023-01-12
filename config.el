@@ -20,7 +20,6 @@
 
 (require 'which-key)
 (setq which-key-idle-delay 0.2)
-(setq which-key-undo "DEL")
 
 (setq company-idle-delay 0.3
       company-maximum-prefix-length 3)
@@ -33,7 +32,7 @@
 (setq-default
  delete-by-moving-to-trash t
  x-stretch-cursor t
- global-visual-line-mode t)
+ global-visual-line-mode 1)
 
 (setq undo-limit 80000000
       evil-want-fine-undo t
@@ -42,9 +41,28 @@
       scroll-preserve-screen-position 'always
       scroll-margin 2)
 
-(global-subword-mode 1)
+(global-subword-mode t)
 
 (global-set-key [?\C-s] 'swiper)
+
+;; TODO Probably submit an issue on github for this
+;; (use-package! which-key
+;;   :hook (doom-first-input . which-key-mode)
+;;   :init
+;;   (setq which-key-undo "DEL"))
+
+(after! highlight-indent-guides
+  (highlight-indent-guides-auto-set-faces))
+
+(use-package lsp-grammarly
+  :ensure t
+  :hook ((text-mode tex-mode gfm-mode markdown-mode) . (lambda ()
+                                                         (require 'lsp-grammarly)
+                                                         (lsp))))  ; or lsp-deferred
+
+(setq lsp-grammarly-dialect "british"
+      lsp-grammarly-domain "academic"
+      lsp-grammarly-suggestions-oxford-comma t)
 
 (setq display-line-numbers-type 'relative)
 
@@ -115,8 +133,8 @@
 ;;        :desc "Search project rg" "h" #'counsel-projectile-rg))
 
 (map! :leader
-       :desc "Switch buffer" "," #'counsel-switch-buffer
-       :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
+      :desc "Switch buffer" "," #'counsel-switch-buffer
+      :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
 
 (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
       doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22)
@@ -128,15 +146,15 @@
 
 (set-input-method 'TeX)
 
-(setq minimap-mode 0)
+;; (setq minimap-mode 0)
 
 (display-time-mode 1) ; Show the time
 (size-indication-mode 1) ; Info about what's going on
-(setq display-time-default-load-average 'nil) ; Hide the load average
+(setq display-time-default-load-average nil) ; Hide the load average
 (setq all-the-icons-scale-factor 1.2) ; prevent the end of the modeline from being cut off
 
 (custom-set-faces!
-  '(doom-modeline-buffer-modified :foreground "orange"))
+  '(doom-modeline-buffer-modified :foreground "orchid2"))
 
 (defun doom-modeline-conditional-buffer-encoding ()
   "We expect the encoding to be LF UTF-8, so only show the modeline when this is not the case"
@@ -188,8 +206,8 @@
 
 (setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
 
-(use-package autothemer
-  :ensure t)
+;; (use-package autothemer
+;;   :ensure t)
 
 (defun random-choice (items)
   (let* ((size (length items))
@@ -214,17 +232,14 @@
   :hook (prog-mode . copilot-mode)
   :bind (("C-TAB" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
-         ("S-TAB" . 'copilot-accept-completion-by-line)
-         ("M-TAB" . 'copilot-accept-completion)))
+         ("TAB" . 'copilot-accept-completion-by-line)
+         ("S-TAB" . 'copilot-accept-completion)))
 
 (when (string= (system-name) "apollo")
   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
 
 (when (string= (system-name) "maccie")
   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node"))
-
-;; (add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
-;; (setq highlight-indent-guides-method (character))
 
 ;; Uncomment the next line if you are using this from source
 ;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
@@ -257,30 +272,29 @@
   :hook
   (sh-mode . lsp))
 
-(after! sh
-  (set-pretty-symbols! 'sh-mode nil))
+;; (after! sh
+;;   (set-pretty-symbols! 'sh-mode nil))
 
 (setq sh-basic-offset 2)
 (setq sh-indentation 2)
 
-;; (add-hook 'f90-mode-hook 'eglot-ensure)
+(after! f90-mode
+  (setq fortran-continuation-string "&")
+  (setq fortran-do-indent 2)
+  (setq fortran-if-indent 2)
+  (setq fortran-structure-indent 2)
 
-;; (load-file "~/Applications/fortran-tags/fortran-tags.el")
-
-(setq fortran-continuation-string "&")
-(setq fortran-do-indent 2)
-(setq fortran-if-indent 2)
-(setq fortran-structure-indent 2)
-
-(setq f90-do-indent 2)
-(setq f90-if-indent 2)
-(setq f90-type-indent 2)
-(setq f90-program-indent 2)
-(setq f90-continuation-indent 4)
-(setq f90-smart-end 'blink)
+  (setq f90-do-indent 2)
+  (setq f90-if-indent 2)
+  (setq f90-type-indent 2)
+  (setq f90-program-indent 2)
+  (setq f90-continuation-indent 4)
+  (setq f90-smart-end 'blink))
 
 (setq auto-mode-alist
       (cons '("\\.F90$" . f90-mode) auto-mode-alist))
+(setq auto-mode-alist
+      (cons '("\\.f90$" . f90-mode) auto-mode-alist))
 (setq auto-mode-alist
       (cons '("\\.pf$" . f90-mode) auto-mode-alist))
 (setq auto-mode-alist
@@ -366,53 +380,55 @@
 (require 'latex-preview-pane)
 (latex-preview-pane-enable)
 
-(use-package lsp-ui
-    :ensure t
-    :after (lsp-mode)
-    :init (setq lsp-enable-symbol-highlighting t
-                lsp-ui-doc-enable t
-                lsp-ui-sideline-enable t
-                lsp-ui-sideline-mode 1
-                lsp-ui-sideline-delay 1
-                lsp-ui-sideline-show-diagnostics t
-                lsp-ui-sideline-show-hover t
-                lsp-ui-sideline-show-code-actions t
-                lsp-ui-sideline-show-symbol t
-                lsp-ui-sideline-update-mode 'point
-                lsp-ui-peek-enable t
-                lsp-ui-peek-show-directory t
-                ;; lsp-ui-peek-mode nil
-                lsp-ui-doc-enable t
-                ;; lsp-ui-doc-frame-mode 1 - This breaks 'q' for some reason
-                lsp-ui-doc-delay 1
-                lsp-ui-doc-show-with-cursor t
-                lsp-ui-doc-show-with-mouse t
-                lsp-ui-doc-header nil
-                lsp-ui-doc-use-childframe t
-                lsp-ui-doc-position 'at-point
-                lsp-ui-doc-use-webkit t
-                lsp-ui-imenu-enable t
-                lsp-ui-imenu-kind-position 'left
-                lsp-ui-imenu-buffer-position 'right
-                lsp-ui-imenu-window-width 35
-                lsp-ui-imenu-auto-refresh t
-                lsp-ui-imenu-auto-refresh-delay 1
-                lsp-lens-enable t
-                lsp-headerline-breadcrumb-enable t
-                lsp-modeline-code-actions-enable t
-                lsp-modeline-diagnostics-enable t
-                lsp-diagnostics-provider :auto
-                lsp-eldoc-enable-hover t
-                lsp-completion-provider :auto
-                lsp-completion-show-detail t
-                lsp-completion-show-kind t
-                lsp-signature-auto-activate t
-                lsp-signature-render-documentation nil))
+(after! lsp-mode
+  (setq lsp-enable-symbol-highlighting t
+        lsp-lens-enable t
+        lsp-headerline-breadcrumb-enable t
+        lsp-modeline-code-actions-enable t
+        lsp-modeline-diagnostics-enable t
+        lsp-diagnostics-provider :auto
+        lsp-eldoc-enable-hover t
+        lsp-completion-provider :auto
+        lsp-completion-show-detail t
+        lsp-completion-show-kind t
+        lsp-signature-mode t
+        lsp-signature-auto-activate t
+        lsp-signature-render-documentation t))
 
-(use-package lsp-ui
-  :bind (("C-," . lsp-ui-doc-focus-frame)))
+(after! lsp-ui
+  (setq lsp-ui-sideline-enable t
+        ;; lsp-ui-sideline-mode 1
+        lsp-ui-sideline-delay 1
+        lsp-ui-sideline-show-symbol t
+        lsp-ui-sideline-show-diagnostics t
+        lsp-ui-sideline-show-hover t
+        lsp-ui-sideline-show-code-actions t
+        lsp-ui-sideline-update-mode 'point
+        ;; lsp-ui-peek-enable t
+        lsp-ui-peek-show-directory t
+        lsp-ui-doc-enable t
+        ;; lsp-ui-doc-frame-mode 1 ; This breaks 'q' for some reason
+        lsp-ui-doc-delay 1
+        lsp-ui-doc-show-with-cursor t
+        lsp-ui-doc-show-with-mouse t
+        lsp-ui-doc-header t
+        lsp-ui-doc-use-childframe t
+        lsp-ui-doc-position 'top
+        lsp-ui-doc-max-height 25
+        lsp-ui-doc-use-webkit t
+        lsp-ui-imenu-enable t
+        lsp-ui-imenu-kind-position 'left
+        lsp-ui-imenu-buffer-position 'right
+        lsp-ui-imenu-window-width 35
+        lsp-ui-imenu-auto-refresh t
+        lsp-ui-imenu-auto-refresh-delay 1.0))
 
-(setq lsp-auto-guess-root t)
+;; :bind (("C-," . lsp-ui-doc-focus-frame)))
+
+(after! dap-mode
+  (setq dap-auto-configure-mode t)
+  (require 'dap-python)
+  (require 'dap-gdb-lldb))
 
 ;; (lsp-treemacs-sync-mode 1)
 
@@ -425,11 +441,23 @@
 ;;                      :server-id 'pyright-remote))
 
 (add-hook 'markdown-mode-hook #'grip-mode)
-(setq grip-binary-path "/home/dylanmorgan/.local/bin/grip")
+
+(when (string= (system-name) "maccie")
+  (setq grip-binary-path "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node/grip"))
+(when (string= (system-name) "apollo")
+  (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
+
 (setq grip-preview-use-webkit t)
 
-(setq grip-github-user "grip-github-user")
-(setq grip-github-password "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")
+(setq grip-sleep-time 2)
+
+;; (setq grip-github-user "grip-github-user")
+;; (setq grip-github-password "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")
+
+(require 'auth-source)
+(let ((credential (auth-source-user-and-password "api.github.com")))
+  (setq grip-github-user (car credential)
+        grip-github-password (cadr credential)))
 
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
@@ -441,18 +469,12 @@
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 
-;; TODO limit this to only python buffers
-(use-package! python-black
-  :demand t
-  :after python
-  :config
-  ;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-  (map! :leader
-        (:prefix-map ("m" . "<localleader>")
-         (:prefix ("b" . "black")
-          :desc "Blacken Buffer" "b" #'python-black-buffer
-          :desc "Blacken Region" "r" #'python-black-region
-          :desc "Blacken Statement" "s" #'python-black-statement))))
+(map! :after python-mode
+      :map python-mode-map
+      ;; (:prefix-map ("b" . "black")
+       :desc "Blacken Buffer" "b" #'python-black-buffer
+       :desc "Blacken Region" "r" #'python-black-region
+       :desc "Blacken Statement" "s" #'python-black-statement)
 
 ;; (add-to-list 'load-path "/your/path/")
 (require 'py-isort)
@@ -481,26 +503,25 @@
 ;; (add-hook 'python-mode-hook (lambda ()
 ;;     (setq +pretty-code-symbols-alist '(python-mode nil ))))
 
-;; TODO limit this to only python buffers
-;; (use-package! poetry
-;;   :demand t
-;;   :after python
-;;   :config
-;;   ;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-;;   (map! :leader
-;;         (:prefix-map ("m" . "<localleader>")
-;;          (:prefix ("p" . "poetry")
-;;           :desc "Add dependency" "a" #'poetry-add
-;;           :desc "Install dependencies" "i" #'poetry-install-install))))
+(use-package! poetry
+  :demand t
+  :after python-mode
+  :config
+  ;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
+  (map! :leader
+        (:prefix-map ("m" . "<localleader>")
+         (:prefix ("p" . "poetry")
+          :desc "Add dependency" "a" #'poetry-add
+          :desc "Install dependencies" "i" #'poetry-install-install))))
 
 (use-package python
   :after (python-mode)
   :config
-  (setq python-shell-interpreter "python3.10"))
+  (setq python-shell-interpreter "python3.11"))
 
 (use-package lsp-pyright
   :hook (python-mode . (lambda () (require 'lsp-pyright)))
-  :init (when (executable-find "python3.10")
+  :init (when (executable-find "python3.11")
           (setq lsp-pyright-python-executable-cmd "python")))
 
 (setq org-agenda-files '("~/Documents/org"))
@@ -538,11 +559,10 @@
           "#+STARTUP: content\n\n"
           "* Table of Contents :toc:\n\n"))
 
-;; TODO Make this work only in org mode
 (map! :map org-mode-map
       :after org
       :localleader
-      :prefix ("m j" . "org header")
+      :prefix ("j" . "org header")
       :desc "literate config"
       "l" 'org-literate-config
       :desc "note taking"
@@ -750,8 +770,8 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 
 (setq org-pretty-entities t)
 
-;; (global-prettify-symbols-mode 1)
-;; (add-hook 'org-mode-hook #'+org-pretty-mode)
+(global-prettify-symbols-mode 1)
+(add-hook 'org-mode-hook #'+org-pretty-mode)
 
 (setq org-roam-directory "/home/dylanmorgan/Documents/org/roam")
 
@@ -921,9 +941,9 @@ Return nil otherwise."
 (dolist (lang org-babel-lang-list)
   (eval `(lsp-org-babel-enable ,lang)))
 
-;; (defun org-babel-edit-prep:java (babel-info)
-;;   (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
-;;   (lsp))
+(defun org-babel-edit-prep:python (babel-info)
+  (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
+  (lsp))
 
 (use-package toc-org
   :commands toc-org-enable
@@ -933,9 +953,12 @@ Return nil otherwise."
   (interactive)
   (insert "* Table of Contents :toc:\n\n"))
 
-(map! :leader
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :prefix ("C" . "insert toc")
       :desc "insert-toc"
-      "m C" 'add-toc)
+      "C" 'add-toc)
 
 (setq org-log-done 'time)
 (setq org-closed-keep-when-no-todo 'non-nil)
@@ -967,24 +990,24 @@ Return nil otherwise."
 ;;            (require 'fish-completion nil t))
 ;;   (global-fish-completion-mode))
 
- ;; (defun with-face (str &rest face-plist)
- ;;    (propertize str 'face face-plist))
+;; (defun with-face (str &rest face-plist)
+;;    (propertize str 'face face-plist))
 
- ;;  (defun shk-eshell-prompt ()
- ;;    (let ((header-bg "#fff"))
- ;;      (concat
- ;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
- ;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
- ;;       (with-face
- ;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
- ;;        :background header-bg)
- ;;       (with-face "\n" :background header-bg)
- ;;       (with-face user-login-name :foreground "blue")
- ;;       "@"
- ;;       (with-face "localhost" :foreground "green")
- ;;       (if (= (user-uid) 0)
- ;;           (with-face " #" :foreground "red")
- ;;         " $")
- ;;       " ")))
- ;;  (setq eshell-prompt-function 'shk-eshell-prompt)
- ;;  (setq eshell-highlight-prompt nil)
+;;  (defun shk-eshell-prompt ()
+;;    (let ((header-bg "#fff"))
+;;      (concat
+;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
+;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
+;;       (with-face
+;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
+;;        :background header-bg)
+;;       (with-face "\n" :background header-bg)
+;;       (with-face user-login-name :foreground "blue")
+;;       "@"
+;;       (with-face "localhost" :foreground "green")
+;;       (if (= (user-uid) 0)
+;;           (with-face " #" :foreground "red")
+;;         " $")
+;;       " ")))
+;;  (setq eshell-prompt-function 'shk-eshell-prompt)
+;;  (setq eshell-highlight-prompt nil)

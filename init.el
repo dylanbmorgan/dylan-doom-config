@@ -23,14 +23,19 @@
        :completion
        (company           ; the ultimate code completion backend
         +childframe)
-       ;;helm              ; the *other* search engine for love and life
-       ;;ido               ; the other *other* search engine...
        (ivy
         +fuzzy
         +icons
-        +prescient)      ;a search engine for love and life
-       (vertico           ; the search engine of the future
-        +icons)
+        +prescient
+        +childframe)      ; a search engine for love and life
+       ;;ido               ; the other *other* search engine...
+       ;; (helm
+       ;;  +childframe
+       ;;  +fuzzy
+       ;;  +icons)              ; the *other* search engine for love and life
+       ;; (vertico           ; the search engine of the future
+       ;; +icons
+       ;; +childframe)
 
        :ui
        deft              ; notational velocity for Emacs
@@ -40,8 +45,8 @@
        (emoji +unicode)  ; 🙂
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
        ;;hydra
-       ;;indent-guides     ; highlighted indent columns
-       (ligatures         ; ligatures and symbols to make your code pretty again
+       indent-guides     ; highlighted indent columns
+       (ligatures        ; ligatures and symbols to make your code pretty again
         +fira)
        minimap           ; show a map of the code on the side
        modeline          ; snazzy, Atom-inspired modeline, plus API
@@ -52,7 +57,7 @@
        tabs              ; a tab bar for Emacs
        ;; (treemacs          ; a project drawer, like neotree but cooler
        ;;  +lsp)
-       ;;unicode           ; extended unicode support for various languages
+       unicode           ; extended unicode support for various languages
        vc-gutter         ; vcs diff in the fringe
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        (window-select     ; visually switch windows
@@ -95,8 +100,9 @@
        (syntax              ; tasing you for every semicolon you forget
         +childframe)
        (spell            ; tasing you for misspelling mispelling
-        +aspell)
-       ;;grammar           ; tasing grammar mistake every you make
+        +aspell
+        +everywhere)
+       grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -124,7 +130,7 @@
        ;;taskrunner        ; taskrunner for all your projects
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
-       ;;upload            ; map local to remote projects via ssh/ftp
+       upload            ; map local to remote projects via ssh/ftp
 
        :os
        (:if IS-MAC macos)  ; improve compatibility with macOS
@@ -180,17 +186,19 @@
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
        (org               ; organize your plain life in plain text
-        +pretty
         +dragndrop
+        +gnuplot
         +jupyter
         +noter
         +pandoc
         +present
+        +pretty
         +roam2)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
        (python            ; beautiful is better than ugly
+        +conda
         +lsp
         +poetry
         +pyright)
