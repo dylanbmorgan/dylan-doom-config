@@ -517,10 +517,13 @@ Setup lsp-docker
 #+end_src
 
 ** Magit
-Add keybinds to push to remote and view diffs.
+Add keybindings to push to remote and view diffs.
 
 #+begin_src emacs-lisp
-;; TODO
+(map! :leader
+      :desc "Magit pull" "g p" #'magit-pull
+      :desc "Magit push" "g P" #'magit-push
+      :desc "Magit diff" "g d" #'magit-diff)
 #+end_src
 
 ** Bash
@@ -627,8 +630,7 @@ Change directory for LanguageServer.jl and SymbolServer.jl
 #+end_src
 
 ** LaTeX
-
-See [[https://tecosaur.github.io/emacs-config/config.html#transc   lusion][tecosaur's config]], but might just keep using overleaf
+See [[https://tecosaur.github.io/emacs-config/config.html#transc  lusion][tecosaur's config]], but might just keep using overleaf
 
 *** CDLaTeX
 Set new environments for:
@@ -842,10 +844,9 @@ Mirror the style that markdown renders in
 #+begin_src emacs-lisp
 (map! :after python-mode
       :map python-mode-map
-      ;; (:prefix-map ("b" . "black")
-       :desc "Blacken Buffer" "b" #'python-black-buffer
-       :desc "Blacken Region" "r" #'python-black-region
-       :desc "Blacken Statement" "s" #'python-black-statement)
+      :desc "Blacken Buffer" "b" #'python-black-buffer
+      :desc "Blacken Region" "r" #'python-black-region
+      :desc "Blacken Statement" "s" #'python-black-statement)
 #+end_src
 
 **** iSort

@@ -1,4 +1,4 @@
-# Created 2023-01-12 Thu 14:53
+# Created 2023-01-13 Fri 14:21
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+property: header-args :tangle config.el
@@ -513,10 +513,13 @@ Setup lsp-docker
 #+end_src
 
 ** Magit
-Add keybinds to push to remote and view diffs.
+Add keybindings to push to remote and view diffs.
 
 #+begin_src emacs-lisp
-;; TODO
+(map! :leader
+      :desc "Magit pull" "g p" #'magit-pull
+      :desc "Magit push" "g P" #'magit-push
+      :desc "Magit diff" "g d" #'magit-diff)
 #+end_src
 
 ** Bash
@@ -623,8 +626,7 @@ Change directory for LanguageServer.jl and SymbolServer.jl
 #+end_src
 
 ** LaTeX
-
-See [[https://tecosaur.github.io/emacs-config/config.html#transc   lusion][tecosaur's config]], but might just keep using overleaf
+See [[https://tecosaur.github.io/emacs-config/config.html#transc  lusion][tecosaur's config]], but might just keep using overleaf
 
 *** CDLaTeX
 Set new environments for:
@@ -838,10 +840,9 @@ Mirror the style that markdown renders in
 #+begin_src emacs-lisp
 (map! :after python-mode
       :map python-mode-map
-      ;; (:prefix-map ("b" . "black")
-       :desc "Blacken Buffer" "b" #'python-black-buffer
-       :desc "Blacken Region" "r" #'python-black-region
-       :desc "Blacken Statement" "s" #'python-black-statement)
+      :desc "Blacken Buffer" "b" #'python-black-buffer
+      :desc "Blacken Region" "r" #'python-black-region
+      :desc "Blacken Statement" "s" #'python-black-statement)
 #+end_src
 
 **** iSort
@@ -986,6 +987,16 @@ Provide different options for default headers for emacs org files
           "#+STARTUP: content\n\n"
           "* Table of Contents :toc:\n\n"))
 
+(defun org-header-with-readme ()
+  (interactive)
+  (setq title (read-string "Title: "))
+  (insert "#+TITLE: " title " \n"
+          "#+AUTHOR: Dylan Morgan\n"
+          "#+EMAIL: dbmorgan98@gmail.com\n"
+          "#+STARTUP: content\n"
+          "#+EXPORT_FILE_NAME: ./README.org\n\n"
+          "* Table of Contents :toc:\n\n"))
+
 (map! :map org-mode-map
       :after org
       :localleader
@@ -995,7 +1006,9 @@ Provide different options for default headers for emacs org files
       :desc "note taking"
       "n" 'org-header-notes
       :desc "notes custom property"
-      "p" 'org-header-notes-custom-property)
+      "p" 'org-header-notes-custom-property
+      :desc "header with readme"
+      "r" 'org-header-with-readme)
 #+end_src
 
 ** General

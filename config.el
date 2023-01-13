@@ -265,7 +265,10 @@
   :client-packages lsp-docker-client-packages
   :client-configs lsp-docker-client-configs)
 
-;; TODO
+(map! :leader
+      :desc "Magit pull" "g p" #'magit-pull
+      :desc "Magit push" "g P" #'magit-push
+      :desc "Magit diff" "g d" #'magit-diff)
 
 (use-package lsp-mode
   :commands lsp
@@ -471,10 +474,9 @@
 
 (map! :after python-mode
       :map python-mode-map
-      ;; (:prefix-map ("b" . "black")
-       :desc "Blacken Buffer" "b" #'python-black-buffer
-       :desc "Blacken Region" "r" #'python-black-region
-       :desc "Blacken Statement" "s" #'python-black-statement)
+      :desc "Blacken Buffer" "b" #'python-black-buffer
+      :desc "Blacken Region" "r" #'python-black-region
+      :desc "Blacken Statement" "s" #'python-black-statement)
 
 ;; (add-to-list 'load-path "/your/path/")
 (require 'py-isort)
