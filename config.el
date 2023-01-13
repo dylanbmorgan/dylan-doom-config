@@ -227,16 +227,21 @@
 
 (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
 
+(map! :nvi "C-TAB" nil)
+(map! :nvi "C-<tab>" nil)
+
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
   :bind (("C-TAB" . 'copilot-accept-completion-by-word)
+         ("C-<tab>" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
          ("TAB" . 'copilot-accept-completion-by-line)
-         ("S-TAB" . 'copilot-accept-completion)))
+         ("C-M-TAB" . 'copilot-accept-completion)
+         ("C-M-<tab>" . 'copilot-accept-completion)))
 
 (when (string= (system-name) "apollo")
-  (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
+  (setq copilot-node-executable "/.local/share/nvm/v17.9.1/bin/node"))
 
 (when (string= (system-name) "maccie")
   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node"))
@@ -268,7 +273,8 @@
 (map! :leader
       :desc "Magit pull" "g p" #'magit-pull
       :desc "Magit push" "g P" #'magit-push
-      :desc "Magit diff" "g d" #'magit-diff)
+      :desc "Magit diff" "g d" #'magit-diff
+      :desc "Magit stash" "g z" #'magit-stash)
 
 (use-package lsp-mode
   :commands lsp
