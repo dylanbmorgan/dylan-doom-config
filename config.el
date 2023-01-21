@@ -233,15 +233,16 @@
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
-  :bind (("C-TAB" . 'copilot-accept-completion-by-word)
-         ("C-<tab>" . 'copilot-accept-completion-by-word)
+  :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
+         ("C-S-<tab>" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
-         ("TAB" . 'copilot-accept-completion-by-line)
+         ("C-TAB" . 'copilot-accept-completion-by-line)
+         ("C-<tab>" . 'copilot-accept-completion-by-line)
          ("C-M-TAB" . 'copilot-accept-completion)
          ("C-M-<tab>" . 'copilot-accept-completion)))
 
 (when (string= (system-name) "apollo")
-  (setq copilot-node-executable "/.local/share/nvm/v17.9.1/bin/node"))
+  (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
 
 (when (string= (system-name) "maccie")
   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node"))
@@ -531,6 +532,26 @@
   :hook (python-mode . (lambda () (require 'lsp-pyright)))
   :init (when (executable-find "python3.11")
           (setq lsp-pyright-python-executable-cmd "python")))
+
+(use-package! org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode)
+  :config
+  (setq org-auto-tangle-default t))
+
+(defun insert-auto-tangle-tag ()
+  "Insert auto-tangle tag in a literate config."
+  (interactive)
+  (evil-org-open-below 1)
+  (insert "#+auto_tangle: t ")
+  (evil-force-normal-state))
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :prefix ("j" . "org header")
+      :desc "auto tangle tag"
+      "a" 'insert-auto-tangle-tag)
 
 (setq org-agenda-files '("~/Documents/org"))
 
