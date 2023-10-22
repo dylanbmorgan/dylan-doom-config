@@ -1,8 +1,8 @@
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+email: dbmorgan98@gmail.com
-#+property: header-args :tangle config.el
 #+export_file_name: ./README.org
+#+property: header-args :tangle config.el
 #+startup: content
 
 * Table of Contents :toc:
@@ -18,6 +18,7 @@
   - [[#lines][Lines]]
   - [[#personal-information][Personal Information]]
   - [[#projectile][Projectile]]
+  - [[#treemacs][Treemacs]]
   - [[#tramp][Tramp]]
   - [[#windows][Windows]]
 - [[#appearance][Appearance]]
@@ -41,21 +42,26 @@
   - [[#auto-tangle][Auto Tangle]]
   - [[#agenda][Agenda]]
   - [[#babel][Babel]]
+  - [[#capture][Capture]]
   - [[#exporting][Exporting]]
   - [[#file-conversions][File Conversions]]
   - [[#file-headers][File Headers]]
   - [[#general-2][General]]
   - [[#headings][Headings]]
   - [[#images][Images]]
+  - [[#keybindings][Keybindings]]
   - [[#latex-fragments][LaTeX Fragments]]
+  - [[#presentations][Presentations]]
   - [[#prettification][Prettification]]
+  - [[#preview][Preview]]
   - [[#roam][Roam]]
   - [[#snippet-helpers][Snippet Helpers]]
   - [[#src-blocks][SRC Blocks]]
   - [[#table-of-contents][Table of Contents]]
   - [[#todos]['TODO's]]
 - [[#shells][Shells]]
-  - [[#eshell][Eshell]]
+  - [[#vterm][vterm]]
+  - [[#eshell][eshell]]
   - [[#prompt][Prompt]]
 - [[#help][Help]]
 
@@ -96,7 +102,7 @@ I think this has to go at the top of the file (almost like a shebang)
   - Also mark if the file has unsaved changes
 
 #+begin_src emacs-lisp
-(setq-default major-mode 'org-mode)
+;; (setq-default major-mode 'org-mode)
 
 (setq doom-fallback-buffer-name "► Doom"
       +doom-dashboard-name "► Doom")
@@ -119,7 +125,6 @@ I think this has to go at the top of the file (almost like a shebang)
 I like to have custom delays for company mode, the leader key, and the spell checker:
 
 #+begin_src emacs-lisp
-(require 'which-key)
 (setq which-key-idle-delay 0.2)
 
 (setq company-idle-delay 0.3
@@ -138,6 +143,7 @@ Integrate books into emacs
 #+end_src
 
 ** General
++ Let Emacs know I am using fish as my default shell
 + Delete files to trash
 + Stretch cursor to the glyph width
 + Raise undo limit to 80MB
@@ -146,50 +152,53 @@ Integrate books into emacs
 + How many seconds passwords are cached
 + Controls if scroll commands move point to keep its screen position unchanged
 + Number of lines of margin at the top and bottom of a window
++ Show traceback on error
 + Iterate through CamelCase words
 + Replace I-search binding with swiper
 + Include a 'leader-undo' button
 + Visual fix for indent guides
 
 #+begin_src emacs-lisp
-(setq-default
- delete-by-moving-to-trash t
- x-stretch-cursor t
- global-visual-line-mode 1)
+(setq shell-file-name (executable-find "bash"))
+(setq vterm-shell (executable-find "fish"))
+(setq explicit-shell-file-name (executable-find "fish"))
+
+(setq delete-by-moving-to-trash t
+      x-stretch-cursor t)
 
 (setq undo-limit 80000000
       evil-want-fine-undo t
       auto-save-default t
       password-cache-expiry 30
       scroll-preserve-screen-position 'always
-      scroll-margin 2)
+      scroll-margin 4)
+      ;; debug-on-error t)
 
 (global-subword-mode t)
 
-(global-set-key [?\C-s] 'swiper)
+(map! [?\C-s] #'swiper)
 
-;; TODO Probably submit an issue on github for this
-;; (use-package! which-key
-;;   :hook (doom-first-input . which-key-mode)
-;;   :init
-;;   (setq which-key-undo "DEL"))
+;; TODO
+;; (map! which-key-mode-map
+;;       "DEL" #'which-key-undo)
 
 (after! highlight-indent-guides
   (highlight-indent-guides-auto-set-faces))
-#+end_src
-** Grammarly
+  #+end_src
+
+** TODO Grammarly
 My writing can be pretty bad at times, so I need some help
 
 #+begin_src emacs-lisp
-(use-package lsp-grammarly
-  :ensure t
-  :hook ((text-mode tex-mode gfm-mode markdown-mode) . (lambda ()
-                                                         (require 'lsp-grammarly)
-                                                         (lsp))))  ; or lsp-deferred
-
-(setq lsp-grammarly-dialect "british"
-      lsp-grammarly-domain "academic"
-      lsp-grammarly-suggestions-oxford-comma t)
+;; (use-package! lsp-grammarly
+;;   :ensure t
+;;   :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+;;                                                (require 'lsp-grammarly)
+;;                                                (lsp-deferred)))  ; or lsp-deferred
+;;   :config
+;;   (setq lsp-grammarly-dialect "british"
+;;         lsp-grammarly-domain "academic"
+;;         lsp-grammarly-suggestions-oxford-comma t))
 #+end_src
 
 ** Lines
@@ -200,17 +209,10 @@ Automatically wrap text when it reaches the end of the screen
 #+begin_src emacs-lisp
 (setq display-line-numbers-type 'relative)
 
-(setq global-visual-line-mode 1)
+(add-hook 'text-mode-hook 'turn-on-visual-line-mode)
+(setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
+
 ;; (setq-default auto-fill-function 'do-auto-fill)
-#+end_src
-
-Hard wrap text in LaTeX and latex modes
-
-#+begin_src emacs-lisp
-(add-hook 'latex-mode-hook '(lambda () (setq fill-column 80)))
-(add-hook 'LaTeX-mode-hook '(lambda () (setq fill-column 80)))
-(add-hook 'latex-mode-hook 'turn-on-auto-fill)
-(add-hook 'LaTeX-mode-hook 'turn-on-auto-fill)
 #+end_src
 
 ** Personal Information
@@ -241,6 +243,69 @@ opened first and enable project caching
       (:prefix-map ("p" . "project")
        :desc "Search project a" "H" #'counsel-projectile-ag))
 
+#+end_src
+
+** Treemacs
+To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
+
+#+begin_src emacs-lisp
+(lsp-treemacs-sync-mode 1)
+(add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
+(add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
+#+end_src
+
+General settings
+
+#+begin_src emacs-lisp
+(use-package! treemacs
+  :ensure t
+  :config
+  (progn
+    (setq treemacs-eldoc-display                   'detailed
+          treemacs-find-workspace-method           'find-for-file-or-pick-first
+          treemacs-missing-project-action          'remove
+          treemacs-move-forward-on-expand          t
+          treemacs-project-follow-cleanup          t
+          treemacs-indent-guide-style              'line
+          treemacs-recenter-distance               0.2
+          treemacs-recenter-after-file-follow      'always
+          treemacs-recenter-after-tag-follow       'always
+          treemacs-recenter-after-project-jump     'always
+          treemacs-recenter-after-project-expand   'always
+          treemacs-project-follow-into-home        t
+          treemacs-show-hidden-files               nil
+          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
+          treemacs-select-when-already-in-treemacs 'next-or-back
+          treemacs-tag-follow-delay                1.0
+          treemacs-width-increment                 5)
+
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+    (treemacs-follow-mode t)
+    (treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode t)
+    (when treemacs-python-executable
+      (treemacs-git-commit-diff-mode t))
+
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null treemacs-python-executable)))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+
+  ;; :bind
+  (map! :nvi "M-0" nil)  ; unbind from go to last workspace
+  (map! "M-0" #'treemacs-select-window))
+  ;;       ("C-x t 1"   . treemacs-delete-other-windows)
+  ;;       ("C-x t t"   . treemacs)
+  ;;       ("C-x t d"   . treemacs-select-directory)
+  ;;       ("C-x t B"   . treemacs-bookmark)
+  ;;       ("C-x t C-t" . treemacs-find-file)
+  ;;       ("C-x t M-t" . treemacs-find-tag)))
 #+end_src
 
 ** Tramp
@@ -275,13 +340,23 @@ Smart parentheses
 #+end_src
 
 ** Windows
+*** TODO Moom
+Moom is a package for manipulating the size and location of the actual emacs window. This is particularly useful on my mac.
+
+Firstly, set the default margin
+
+#+begin_src emacs-lisp
+;; (setq moom-user-margin '(50 50 50 50)) ; {top, bottom, left, right}
+;; (moom-mode 1)
+#+end_src
+
+*** Within Emacs
 + Make Doom emacs ask which buffer to see after splitting a window.
 + Take new window space from all other windows (not just current).
 + Window rotation is nice, and can be found under SPC w r and SPC w R.
   - Layout rotation is also nice though. Let’s stash this under SPC w a.
 
 + We could also do with adding the missing arrow-key variants of the window navigation/swapping commands.
-
 + I also like to be able to preview buffers when I switch them.
 
 #+begin_src emacs-lisp
@@ -292,7 +367,7 @@ Smart parentheses
   :after '(evil-window-split evil-window-vsplit)
   (consult-buffer))
 
-(setq-default window-combination-resize t)
+(setq window-combination-resize t)
 
 (map! :map evil-window-map
       "SPC" #'rotate-layout
@@ -446,7 +521,9 @@ Also add blur and opacity (doesn't work)
          (index (random size)))
     (nth index items)))
 
-(setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
+(setq random-theme (random-choice '(doom-dracula doom-moonlight doom-palenight doom-horizon doom-one)))
+
+;; (setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
 
 (cond ((string= random-theme "catppuccin-1") (setq doom-theme 'catppuccin-macchiato))
       ((string= random-theme "catppuccin-2") (setq doom-theme 'catppuccin-frappe))
@@ -468,7 +545,6 @@ Better syntax highlighting for code
 #+end_src
 
 *** Github Copilot
-
 Firstly unbind aya-create from C-TAB
 
 #+begin_src emacs-lisp
@@ -476,9 +552,12 @@ Firstly unbind aya-create from C-TAB
 (map! :nvi "C-<tab>" nil)
 #+end_src
 
+Then define the keybindings to use for Github copilot
+
 #+begin_src emacs-lisp
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
+  :ensure t
   :hook (prog-mode . copilot-mode)
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
          ("C-S-<tab>" . 'copilot-accept-completion-by-word)
@@ -486,42 +565,42 @@ Firstly unbind aya-create from C-TAB
          ("C-TAB" . 'copilot-accept-completion-by-line)
          ("C-<tab>" . 'copilot-accept-completion-by-line)
          ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion)))
-
-(when (string= (system-name) "apollo")
-  (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
-
-(when (string= (system-name) "maccie")
-  (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node"))
+         ("C-M-<tab>" . 'copilot-accept-completion))
+  :config
+  (when (string= (system-name) "apollo")
+    (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
+  (when (string= (system-name) "maccie")
+    (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
 #+end_src
 
-** Docker
+** TODO Docker
 Setup lsp-docker
 
 #+begin_src emacs-lisp
 ;; Uncomment the next line if you are using this from source
 ;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
-(require 'lsp-docker)
 
-(defvar lsp-docker-client-packages
-    '(lsp-css lsp-clients lsp-bash lsp-go lsp-pyls lsp-html lsp-typescript
-      lsp-terraform lsp-clangd))
+;; (require 'lsp-docker)
 
-(setq lsp-docker-client-configs
-    '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
-      (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
-      (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
-      ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
-      (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
-      (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")
-      (:server-id pyls :docker-server-id pyls-docker :server-command "pyls")))
-      ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
+;; (defvar lsp-docker-client-packages
+;;     '(lsp-css lsp-clients lsp-bash lsp-go lsp-html lsp-typescript ; ruff-lsp
+;;       lsp-terraform lsp-clangd))
 
-(require 'lsp-docker)
-(lsp-docker-init-clients
-  :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
-  :client-packages lsp-docker-client-packages
-  :client-configs lsp-docker-client-configs)
+;; (setq lsp-docker-client-configs
+;;     '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
+;;       (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
+;;       (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
+;;       ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
+;;       (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
+;;       (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")))
+;;       ;; (:server-id ruff-lsp :docker-server-id pyls-docker :server-command "pyls")))
+;;       ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
+
+;; (require 'lsp-docker)
+;; (lsp-docker-init-clients
+;;   :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
+;;   :client-packages lsp-docker-client-packages
+;;   :client-configs lsp-docker-client-configs)
 #+end_src
 
 ** Magit
@@ -532,41 +611,27 @@ Add keybindings to push to remote and view diffs.
       :desc "Magit pull" "g p" #'magit-pull
       :desc "Magit push" "g P" #'magit-push
       :desc "Magit diff" "g d" #'magit-diff
-      :desc "Magit stash" "g z" #'magit-stash)
+      :desc "Magit stash" "g z" #'magit-stash
+      :desc "Magit stage all" "g a" #'magit-stage-modified
+      :desc "Magit unstage all" "g A" #'magit-unstage-all)
 #+end_src
 
 ** Bash
-*** LSP mode
-
-#+begin_src emacs-lisp
-(use-package lsp-mode
-  :commands lsp
-  :hook
-  (sh-mode . lsp))
-#+end_src
-
-*** TODO Prettify symbols
-Disable prettify symbols in bash (not working)
-
-#+begin_src emacs-lisp
-;; (after! sh
-;;   (set-pretty-symbols! 'sh-mode nil))
-#+end_src
-
 *** Tab Spacing
 Set default tab width to 2:
 
 #+begin_src emacs-lisp
-(setq sh-basic-offset 2)
-(setq sh-indentation 2)
+(after! sh-mode
+  (setq sh-basic-offset 2))
 #+end_src
 
 ** Fortran
-
 Set indentation for fortran and f90
 
 #+begin_src emacs-lisp
-(after! f90-mode
+(use-package! f90-mode
+  :hook (f90-mode . format-all-mode)
+  :config
   (setq fortran-continuation-string "&")
   (setq fortran-do-indent 2)
   (setq fortran-if-indent 2)
@@ -595,6 +660,8 @@ Set Fortran and Fortran 90 mode for appropriate extensions
       (cons '("\\.fpp$" . f90-mode) auto-mode-alist))
 (setq auto-mode-alist
       (cons '("\\.F$" . fortran-mode) auto-mode-alist))
+(setq auto-mode-alist
+      (cons '("\\.f$" . fortran-mode) auto-mode-alist))
 #+end_src
 
 ** Julia
@@ -602,24 +669,21 @@ Set Fortran and Fortran 90 mode for appropriate extensions
 Automatically start when opening a julia file
 
 #+begin_src emacs-lisp
-(use-package eglot-jl
-  :ensure t
-  :defer  t)
+;; (use-package! eglot-jl
+;;   :ensure t
+;;   :defer  t)
 
-(use-package julia-mode
+(use-package! julia-mode
   :ensure t
+  :init
+  (setenv "JULIA_NUM_THREADS" "6")
   :interpreter ("julia" . julia-mode))
 
   ;; :config
   ;; (add-hook 'julia-mode-hook 'eglot-jl-init)
   ;; (add-hook 'julia-mode-hook 'eglot-ensure))
 
-(setenv "JULIA_NUM_THREADS" "6")
-
-(add-hook 'ess-julia-mode-hook #'lsp-mode)
-
-(add-hook 'julia-mode-hook #'lsp-mode)
-(add-hook 'julia-mode-hook #'lsp)
+(add-hook! 'julia-mode-hook #'lsp-mode)
 #+end_src
 
 Julia-lsp doesn't work without this
@@ -635,7 +699,9 @@ Julia-lsp doesn't work without this
 Change directory for LanguageServer.jl and SymbolServer.jl
 
 #+begin_src emacs-lisp
-;; (setq lsp-julia-default-environment "~/.julia/environment/v1.7/")
+;; (use-package! lsp-julia
+;;   :config)
+;;   (setq lsp-julia-default-environment "~/.julia/environments/v1.8"))
 #+end_src
 
 ** LaTeX
@@ -654,46 +720,44 @@ Also make some additions/modifications to the maths symbol alist
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(setq cdlatex-env-alist
-      '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
-        ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
-        ("bmatrix" "\\begin{equation*}\n    ?\n    \\begin{bmatrix}\n        \n    \\end{bmatrix}\n\\end{equation*}" nil)
-        ("vmatrix" "\\begin{equation*}\n    ?\n    \\begin{vmatrix}\n        \n    \\end{vmatrix}\n\\end{equation*}" nil)
-        ("split" "\\begin{equation} \\label{?}\n    \\begin{split}\n        \n    \\end{split}\n\\end{equation}" nil)
-        ("non-numbered split" "\\begin{equation*}\n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation*}" nil)
-        ))
-
-(setq cdlatex-command-alist
-      '(("neq" "Insert non-numbered equation env" "" cdlatex-environment ("non-numbered equation") t nil)
-        ("equ" "Insert numbered equation env" "" cdlatex-environment ("equation") t nil) ; This might not work
-        ("bmat" "Insert bmatrix env" "" cdlatex-environment ("bmatrix") t nil)
-        ("vmat" "Insert vmatrix env" "" cdlatex-environment ("vmatrix") t nil)
-        ("spl" "Insert split env" "" cdlatex-environment ("split") t nil)
-        ("nspl" "Insert non-numbered split env" "" cdlatex-environment ("non-numbered split") t nil)
-        ))
-
-(setq cdlatex-math-symbol-alist
-      '((?= ("\\equiv" "\\leftrightarrow" "\\longleftrightarrow"))
-        (?! ("\\neq"))
-        (?+ ("\\cup" "\\pm"))
-        (?^ ("\\uparrow" "\\downarrow"))
-        (?: ("\\cdots" "\\vdots" "\\ddots"))
-        (?b ("\\beta" "\\mathbb{?}"))
-        (?i ("\\in" "\\implies" "\\imath"))
-        (?I ("\\int" "\\Im"))
-        (?F ("\\Phi"))
-        (?P ("\\Pi" "\\propto"))
-        (?Q ("\\Theta" "\\quad" "\\qquad"))
-        (?S ("\\Sigma" "\\sum" "\\arcsin"))
-        (?t ("\\tau" "\\therefore" "\\tan"))
-        (?T ("\\times" "" "\\arctan"))
-        (?V ())
-        (?/ ("\\frac{?}{}" "\\not")) ;; Normal fr command doesn't work properly
-        (?< ("\\leq" "\\ll" "\\longleftarrow"))
-        (?> ("\\geq" "\\gg" "\\longrightarrow"))
-        (?$ ("\\leftarrow" "" ""))
-        (?% ("\\rightarrow" "" ""))
-        ))
+(after! latex-mode
+  (setq cdlatex-env-alist
+        '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
+          ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
+          ("bmatrix" "\\begin{equation*}\n    ?\n    \\begin{bmatrix}\n        \n    \\end{bmatrix}\n\\end{equation*}" nil)
+          ("vmatrix" "\\begin{equation*}\n    ?\n    \\begin{vmatrix}\n        \n    \\end{vmatrix}\n\\end{equation*}" nil)
+          ("pmatrix" "\\begin{equation*}\n    ?\n    \\begin{pmatrix}\n        \n    \\end{pmatrix}\n\\end{equation*}" nil)
+          ("split" "\\begin{equation} \\label{?}\n    \\begin{split}\n        \n    \\end{split}\n\\end{equation}" nil)
+          ("non-numbered split" "\\begin{equation*}\n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation*}" nil)))
+  (setq cdlatex-command-alist
+        '(("neq" "Insert non-numbered equation env" "" cdlatex-environment ("non-numbered equation") t nil)
+          ("equ" "Insert numbered equation env" "" cdlatex-environment ("equation") t nil) ; This might not work
+          ("bmat" "Insert bmatrix env" "" cdlatex-environment ("bmatrix") t nil)
+          ("vmat" "Insert vmatrix env" "" cdlatex-environment ("vmatrix") t nil)
+          ("pmat" "Insert pmatrix env" "" cdlatex-environment ("pmatrix") t nil)
+          ("spl" "Insert split env" "" cdlatex-environment ("split") t nil)
+          ("nspl" "Insert non-numbered split env" "" cdlatex-environment ("non-numbered split") t nil)))
+  (setq cdlatex-math-symbol-alist
+        '((?= ("\\equiv" "\\leftrightarrow" "\\longleftrightarrow"))
+          (?! ("\\neq"))
+          (?+ ("\\cup" "\\pm"))
+          (?^ ("\\uparrow" "\\downarrow"))
+          (?: ("\\cdots" "\\vdots" "\\ddots"))
+          (?b ("\\beta" "\\mathbb{?}"))
+          (?i ("\\in" "\\implies" "\\imath"))
+          (?I ("\\int" "\\Im"))
+          (?F ("\\Phi"))
+          (?P ("\\Pi" "\\propto"))
+          (?Q ("\\Theta" "\\quad" "\\qquad"))
+          (?S ("\\Sigma" "\\sum" "\\arcsin"))
+          (?t ("\\tau" "\\therefore" "\\tan"))
+          (?T ("\\times" "" "\\arctan"))
+          (?V ())
+          (?/ ("\\frac{?}{}" "\\not")) ;; Normal fr command doesn't work properly
+          (?< ("\\leq" "\\ll" "\\longleftarrow"))
+          (?> ("\\geq" "\\gg" "\\longrightarrow"))
+          (?$ ("\\leftarrow" "" ""))
+          (?% ("\\rightarrow" "" "")))))
 #+end_src
 
 *** Company Math
@@ -703,17 +767,24 @@ Enable a company completion back-end for LaTeX maths symbols
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 #+end_src
 
+*** General
+
+#+begin_src emacs-lisp
+(after! latex-mode
+  (setq-default TeX-master nil))
+#+end_src
+
 *** Preview Pane
 Enable LaTeX preview pane
 
 #+begin_src emacs-lisp
-(require 'latex-preview-pane)
-(latex-preview-pane-enable)
+(after! latex-mode
+  (require 'latex-preview-pane)
+  (latex-preview-pane-enable))
 #+end_src
 
 ** LSP
 *** General
-
 Configure general settings for LSP
 
 #+begin_src emacs-lisp
@@ -730,11 +801,11 @@ Configure general settings for LSP
         lsp-completion-show-kind t
         lsp-signature-mode t
         lsp-signature-auto-activate t
-        lsp-signature-render-documentation t))
+        lsp-signature-render-documentation t
+        lsp-idle-delay 0.500))
 #+end_src
 
 *** lsp-ui
-
 Configure lsp-ui settings
 
 #+begin_src emacs-lisp
@@ -747,10 +818,10 @@ Configure lsp-ui settings
         lsp-ui-sideline-show-hover t
         lsp-ui-sideline-show-code-actions t
         lsp-ui-sideline-update-mode 'point
-        ;; lsp-ui-peek-enable t
+        lsp-ui-peek-enable t
         lsp-ui-peek-show-directory t
         lsp-ui-doc-enable t
-        ;; lsp-ui-doc-frame-mode 1 ; This breaks 'q' for some reason
+        lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
         lsp-ui-doc-delay 1
         lsp-ui-doc-show-with-cursor t
         lsp-ui-doc-show-with-mouse t
@@ -764,76 +835,82 @@ Configure lsp-ui settings
         lsp-ui-imenu-buffer-position 'right
         lsp-ui-imenu-window-width 35
         lsp-ui-imenu-auto-refresh t
-        lsp-ui-imenu-auto-refresh-delay 1.0))
+        lsp-ui-imenu-auto-refresh-delay 1.0)
 
-;; :bind (("C-," . lsp-ui-doc-focus-frame)))
+  (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame)
+  (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-sideline-execute-code-action))
+
+(map! :after lsp-mode
+      :map lsp-mode-map
+      :leader
+      :prefix ("#" . "custom")
+      :prefix ("# l" . "lsp")
+      :desc "open imenu"
+      "i" #'lsp-ui-imenu
+      "I" #'lsp-ui-imenu--refresh)
 #+end_src
 
-*** DAP
-
+*** TODO DAP
 Enable the DAP debugger
 
 #+begin_src emacs-lisp
-(after! dap-mode
-  (setq dap-auto-configure-mode t)
-  (require 'dap-python)
-  (require 'dap-gdb-lldb))
-#+end_src
+;; (use-package! dap-mode
+;;   :after lsp-mode
+;;   :commands dap-debug
+;;   :hook ((python-mode . dap-ui-mode)
+;; 	 (python-mode . dap-mode))
+;;   :config
+;;   (eval-when-compile
+;;     (require 'cl))
+;;   (require 'dap-python)
+;;   (require 'dap-lldb)
 
-To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
+;;   ;; Temporal fix
+;;   (defun dap-python--pyenv-executable-find (command)
+;;     (with-venv (executable-find "python"))))
 
-*** Treemacs
-
-#+begin_src emacs-lisp
-;; (lsp-treemacs-sync-mode 1)
-#+end_src
-
-*** Tramp
-
-#+begin_src emacs-lisp
-;; TODO configure over tramp
-
-;; (lsp-register-client
-;;     (make-lsp-client :new-connection (lsp-tramp-connection "pyright")
-;;                      :major-modes '(python-mode)
-;;                      :remote? t
-;;                      :server-id 'pyright-remote))
+;; (after! dap-mode
+;;   (setq dap-auto-configure-mode t)
+;;   (require 'dap-python)
+;;   ;; if you installed debugpy, you need to set this
+;;   ;; https://github.com/emacs-lsp/dap-mode/issues/306
+;;   (setq dap-python-debugger 'debugpy)
+;;   (require 'dap-gdb-lldb))
 #+end_src
 
 ** Markdown
-Automatically open live preview when opening a markdown file
-
-#+begin_src emacs-lisp
-(add-hook 'markdown-mode-hook #'grip-mode)
-
-(when (string= (system-name) "maccie")
-  (setq grip-binary-path "/opt/homebrew/bin/grip"))
-(when (string= (system-name) "apollo")
-  (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
-
-(setq grip-preview-use-webkit t)
-
-(setq grip-sleep-time 2)
-#+end_src
-
+*** Github API rate limit
 Github has a rate limit, limiting how long grip-mode will work for. The following should get around this:
 
 #+begin_src emacs-lisp
-;; (setq grip-github-user "grip-github-user")
-;; (setq grip-github-password "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")
-
-(require 'auth-source)
-(let ((credential (auth-source-user-and-password "api.github.com")))
-  (setq grip-github-user (car credential)
-        grip-github-password (cadr credential)))
+(after! grip-mode
+  (setq grip-github-user "grip-github-user")
+  (setq grip-github-password "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"))
 #+end_src
 
+*** Line Wrapping
 Use visual line wrapping
 
 #+begin_src emacs-lisp
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 #+end_src
 
+*** Live Preview
+Automatically open live preview when opening a markdown file
+
+#+begin_src emacs-lisp
+(add-hook! 'markdown-mode-hook #'grip-mode)
+
+(when (string= (system-name) "maccie")
+  (setq grip-binary-path "/opt/homebrew/bin/grip"))
+(when (string= (system-name) "apollo")
+  (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
+
+(setq grip-preview-use-webkit t
+      grip-sleep-time 2)
+#+end_src
+
+*** Markdown Style Customisation
 Mirror the style that markdown renders in
 
 #+begin_src emacs-lisp
@@ -851,19 +928,25 @@ Mirror the style that markdown renders in
 **** Black
 
 #+begin_src emacs-lisp
-(map! :after python-mode
-      :map python-mode-map
-      :desc "Blacken Buffer" "b" #'python-black-buffer
-      :desc "Blacken Region" "r" #'python-black-region
-      :desc "Blacken Statement" "s" #'python-black-statement)
+(use-package! python-black
+  :after python
+  :config
+  (add-hook! 'python-mode-hook #'python-black-on-save-mode)
+  (map! :map python-mode-map
+        :localleader
+        :prefix ("b" . "black")
+        :desc "blacken buffer" "b" #'python-black-buffer
+        :desc "blacken region" "r" #'python-black-region
+        :desc "blacken statement" "s" #'python-black-statement))
 #+end_src
 
 **** iSort
+Automatically reorder imports on save
 
 #+begin_src emacs-lisp
-;; (add-to-list 'load-path "/your/path/")
-(require 'py-isort)
-(add-hook 'before-save-hook 'py-isort-before-save)
+(after! python-mode
+  (require 'py-isort)
+  (add-hook! 'before-save-hook #'py-isort-before-save))
 #+end_src
 
 *** TODO Jupyter
@@ -885,6 +968,70 @@ Loading jupyter instead of emacs-jupyter
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
 #+end_src
+
+*** Linters
+**** Pyright
+
+#+begin_src emacs-lisp
+(use-package! lsp-pyright
+  :ensure t
+  :custom
+  (lsp-pyright-disable-langauge-service nil)
+  (lsp-pyright-disable-organize-imports nil)
+  (lsp-pyright-auto-import-completions t)
+  (lsp-pyright-auto-search-paths t)
+  (lsp-pyright-diagnostics-mode "openFilesOnly")
+  (lsp-pyright-log-level "info")
+  (lsp-pyright-typechecking-mode "basic")
+  (lsp-pyright-use-library-code-for-types t)
+  (lsp-completion-enable t))
+  ;; :hook (python-mode . (lambda ()
+  ;;                         ;; (poetry-tracking-mode)
+  ;;                         (require 'lsp-pyright)
+  ;;                         (lsp-deferred))))  ; or lsp
+#+end_src
+
+Enable pyright over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "pyright")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'pyright)
+;;         :tramp-remote-path )
+#+end_src
+
+**** Ruff
+
+#+begin_src emacs-lisp
+;; (use-package! ruff-lsp
+;;   :ensure t
+;;   :defer t
+;;   :custom
+;;   (lsp-ruff-lsp-advertize-fix-all t)
+;;   (lsp-ruff-lsp-advertize-organize-imports)
+;;   (lsp-ruff-lsp-log-level "info")
+;;   (lsp-ruff-lsp-python-path "python")
+;;   (lsp-ruff-lsp-show-notifications "onWarning"))
+#+end_src
+
+Enable ruff over tramp
+
+#+begin_src emacs-lisp
+(lsp-register-client
+    (make-lsp-client
+        :new-connection (lsp-tramp-connection "ruff-lsp")
+        :activation-fn (lsp-activate-on "python")
+        :major-modes '(python-mode)
+        :remote? t
+        :add-on? t
+        :server-id 'ruff-lsp))
+#+end_src
+
 *** TODO Prettify symbols
 Disable prettify symbols in python
 
@@ -901,34 +1048,25 @@ I've also tried to keep ligatures but this isn't yet working
 #+end_src
 
 *** Poetry
-Set keybindings for poetry
+Set keybindings for poetry and disable over tramp
 
 #+begin_src emacs-lisp
 (use-package! poetry
-  :demand t
-  :after python-mode
+  :ensure t
+  :defer t
+  :after python
+  :hook (python-mode . (lambda ()
+                         (interactive)
+                         (if (file-remote-p default-directory)
+                             (setq package-load-list '(all
+                                                       (poetry nil))))))
   :config
-  ;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-  (map! :leader
-        (:prefix-map ("m" . "<localleader>")
-         (:prefix ("p" . "poetry")
-          :desc "Add dependency" "a" #'poetry-add
-          :desc "Install dependencies" "i" #'poetry-install-install))))
-#+end_src
-
-*** Pyright
-Prevents package not resolved errors
-
-#+begin_src emacs-lisp
-(use-package python
-  :after (python-mode)
-  :config
-  (setq python-shell-interpreter "python3.11"))
-
-(use-package lsp-pyright
-  :hook (python-mode . (lambda () (require 'lsp-pyright)))
-  :init (when (executable-find "python3.11")
-          (setq lsp-pyright-python-executable-cmd "python")))
+  (map! :map python-mode-map
+        :localleader
+        :prefix ("p" . "poetry")
+        :desc "Add dependency" "a" #'poetry-add
+        ;; :desc "Remove dependency" "r" #' poetry-remove
+        :desc "Install dependencies" "i" #'poetry-install-install))
 #+end_src
 
 * Org-mode
@@ -938,12 +1076,6 @@ Add ~#+auto_tange: t~ to the org header to automatically tangle when a document 
 Also set a keybinding for this
 
 #+begin_src emacs-lisp
-(use-package! org-auto-tangle
-  :defer t
-  :hook (org-mode . org-auto-tangle-mode)
-  :config
-  (setq org-auto-tangle-default t))
-
 (defun insert-auto-tangle-tag ()
   "Insert auto-tangle tag in a literate config."
   (interactive)
@@ -968,9 +1100,25 @@ Set filepath for org agenda
 
 *** TODO Super Agenda
 
- (see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
+(see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
 
 ** TODO Babel
+** Capture
+Quickly take down notes
+
+#+begin_src emacs-lisp
+(setq org-capture-templates
+      '(("t" "Tasks" entry
+         (file+headline "" "Inbox")
+         "* TODO %?\n %U")
+        ("c" "Phone Call" entry
+         (file+headline "" "Inbox")
+         "* TODO Call %?\n %U")
+        ("m" "Meeting" entry
+         (file+headline "" "Meetings")
+         "* %?\n %U")))
+#+end_src
+
 ** TODO Exporting
 See [[https://tecosaur.github.io/emacs-config/config.html#exporting][tecosaur again]]
 
@@ -989,7 +1137,8 @@ Leaving org is sad. Thankfully, there's a way around this!
 + Package installed in packages.el
 
 #+begin_src emacs-lisp
-(use-package! org-pandoc-import :after org)
+(use-package! org-pandoc-import
+  :after org)
 #+end_src
 
 ** File Headers
@@ -1066,38 +1215,58 @@ Provide different options for default headers for emacs org files
       org-use-property-inheritance t
       org-list-allow-alphabetical t
       org-export-in-background t
-      org-catch-invisible-edits 'smart)
+      org-fold-catch-invisible-edits 'smart)
 #+end_src
 
 ** Headings
 Show all headings on opening an org file and assign numbers to those headings
 
 #+begin_src emacs-lisp
-(setq org-startup-folded 'content)
-
-(setq org-startup-numerated t)
+(after! org-mode
+  (setq org-startup-folded 'content)
+  (setq org-startup-numerated t))
 #+end_src
 
 Set plain list indents such that the bullet point style signifies the indentation level
 
 #+begin_src emacs-lisp
-(setq org-cycle-include-plain-lists 'integrate)
+(after! org-mode
+  (setq org-cycle-include-plain-lists 'integrate)
+  (setq org-list-demote-modify-bullet '(("+" . "-")
+                                        ("-" . "+")
+                                        ("1." . "a.")
+                                        ("1)" . "a)")))
 
-(setq org-list-demote-modify-bullet '(("+" . "-")
-                                      ("-" . "+")
-                                      ("1." . "a.")
-                                      ("1)" . "a)")))
-
-(setq org-list-use-circular-motion t)
-
-(setq org-list-allow-alphabetical t)
+  (setq org-list-use-circular-motion t)
+  (setq org-list-allow-alphabetical t))
 #+end_src
 
 ** Images
 Automatically display images when opening an org file
 
 #+begin_src emacs-lisp
-(setq org-startup-with-inline-images t)
+(after! org-mode
+  (setq org-startup-with-inline-images t))
+#+end_src
+
+** Keybindings
+
+Change some of the org keybinding
+
+#+begin_src emacs-lisp
+;; (defun org-insert-newline-heading ()
+;;   ('newline)
+;;   ('org-insert-heading))
+
+;; (map! :map org-mode-map
+;;       :after org
+;;       :desc "Insert Heading"
+;;       "M-<return>" 'org-insert-newline-heading)
+
+(map! :map org-mode-map
+      :after org
+      :desc "Insert Heading"
+      "M-<return>" 'org-insert-heading)
 #+end_src
 
 ** LaTeX Fragments
@@ -1105,13 +1274,13 @@ Automatically display images when opening an org file
 Enable cdlatex by default and edit an environment after inserting one.
 
 #+begin_src emacs-lisp
-(setq org-startup-with-latex-preview t)
+(after! org-mode
+  (setq org-startup-with-latex-preview t)
+  (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
 
-(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
-
-(defadvice! org-edit-latex-emv-after-insert ()
-  :after #'org-cdlatex-environment-indent
-  (org-edit-latex-environment))
+  (defadvice! org-edit-latex-emv-after-insert ()
+    :after #'org-cdlatex-environment-indent
+    (org-edit-latex-environment)))
 #+end_src
 
 *** In-line Fragments
@@ -1130,20 +1299,21 @@ Change Latex fragment size
 ;;   (org-latex-preview '(16)))
 ;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-'(org-format-latex-options
-   (quote
-    (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
-         ("begin" "$1" "$" "$$" "\\(" "\\["))))
+(after! org-mode
+  '(org-format-latex-options
+    (quote
+     (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
+      ("begin" "$1" "$" "$$" "\\(" "\\[")))))
 #+end_src
 
 *** Prettier Highlighting
 We want fragments to look lovely
 
 #+begin_src emacs-lisp
-(setq org-highlight-latex-and-related '(native script entities))
-
-(require 'org-src)
-(add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t)))
+(after! org-mode
+  (setq org-highlight-latex-and-related '(native script entities))
+  (require 'org-src)
+  (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t))))
 #+end_src
 
 *** Prettier Rendering
@@ -1187,113 +1357,124 @@ Make background colour transparent
 Lets try this stuff from Scimax
 
 #+begin_src emacs-lisp
-(defun scimax-org-latex-fragment-justify (justification)
-  "Justify the latex fragment at point with JUSTIFICATION.
+(after! org-mode
+  (defun scimax-org-latex-fragment-justify (justification)
+    "Justify the latex fragment at point with JUSTIFICATION.
 JUSTIFICATION is a symbol for 'left, 'center or 'right."
-  (interactive
-   (list (intern-soft
-          (completing-read "Justification (left): " '(left center right)
-                           nil t nil nil 'left))))
-  (let* ((ov (ov-at))
-         (beg (ov-beg ov))
-         (end (ov-end ov))
-         (shift (- beg (line-beginning-position)))
-         (img (overlay-get ov 'display))
-         (img (and (and img (consp img) (eq (car img) 'image)
-                        (image-type-available-p (plist-get (cdr img) :type)))
-                   img))
-         space-left offset)
-    (when (and img
-               ;; This means the equation is at the start of the line
-               (= beg (line-beginning-position))
-               (or
-                (string= "" (s-trim (buffer-substring end (line-end-position))))
-                (eq 'latex-environment (car (org-element-context)))))
-      (setq space-left (- (window-max-chars-per-line) (car (image-size img)))
-            offset (floor (cond
-                           ((eq justification 'center)
-                            (- (/ space-left 2) shift))
-                           ((eq justification 'right)
-                            (- space-left shift))
-                           (t
-                            0))))
-      (when (>= offset 0)
-        (overlay-put ov 'before-string (make-string offset ?\ ))))))
+    (interactive
+     (list (intern-soft
+            (completing-read "Justification (left): " '(left center right)
+                             nil t nil nil 'left))))
+    (let* ((ov (ov-at))
+           (beg (ov-beg ov))
+           (end (ov-end ov))
+           (shift (- beg (line-beginning-position)))
+           (img (overlay-get ov 'display))
+           (img (and (and img (consp img) (eq (car img) 'image)
+                          (image-type-available-p (plist-get (cdr img) :type)))
+                     img))
+           space-left offset)
+      (when (and img
+                 ;; This means the equation is at the start of the line
+                 (= beg (line-beginning-position))
+                 (or
+                  (string= "" (s-trim (buffer-substring end (line-end-position))))
+                  (eq 'latex-environment (car (org-element-context)))))
+        (setq space-left (- (window-max-chars-per-line) (car (image-size img)))
+              offset (floor (cond
+                             ((eq justification 'center)
+                              (- (/ space-left 2) shift))
+                             ((eq justification 'right)
+                              (- space-left shift))
+                             (t
+                              0))))
+        (when (>= offset 0)
+          (overlay-put ov 'before-string (make-string offset ?\ ))))))
 
-(defun scimax-org-latex-fragment-justify-advice (beg end image imagetype)
-  "After advice function to justify fragments."
-  (scimax-org-latex-fragment-justify (or (plist-get org-format-latex-options :justify) 'left)))
+  (defun scimax-org-latex-fragment-justify-advice ()
+    "After advice function to justify fragments."
+    (scimax-org-latex-fragment-justify (or (plist-get org-format-latex-options :justify) 'left)))
 
-(defun scimax-toggle-latex-fragment-justification ()
-  "Toggle if LaTeX fragment justification options can be used."
-  (interactive)
-  (if (not (get 'scimax-org-latex-fragment-justify-advice 'enabled))
-      (progn
-        (advice-add 'org--format-latex-make-overlay :after 'scimax-org-latex-fragment-justify-advice)
-        (put 'scimax-org-latex-fragment-justify-advice 'enabled t)
-        (message "Latex fragment justification enabled"))
-    (advice-remove 'org--format-latex-make-overlay 'scimax-org-latex-fragment-justify-advice)
-    (put 'scimax-org-latex-fragment-justify-advice 'enabled nil)
-    (message "Latex fragment justification disabled")))
+  (defun scimax-toggle-latex-fragment-justification ()
+    "Toggle if LaTeX fragment justification options can be used."
+    (interactive)
+    (if (not (get 'scimax-org-latex-fragment-justify-advice 'enabled))
+        (progn
+          (advice-add 'org--format-latex-make-overlay :after 'scimax-org-latex-fragment-justify-advice)
+          (put 'scimax-org-latex-fragment-justify-advice 'enabled t)
+          (message "Latex fragment justification enabled"))
+      (advice-remove 'org--format-latex-make-overlay 'scimax-org-latex-fragment-justify-advice)
+      (put 'scimax-org-latex-fragment-justify-advice 'enabled nil)
+      (message "Latex fragment justification disabled")))
 
-;; Numbered equations all have (1) as the number for fragments with vanilla
-;; org-mode. This code injects the correct numbers into the previews so they
-;; look good.
-(defun scimax-org-renumber-environment (orig-func &rest args)
-  "A function to inject numbers in LaTeX fragment previews."
-  (let ((results '())
-        (counter -1)
-        (numberp))
-    (setq results (cl-loop for (begin . env) in
-                           (org-element-map (org-element-parse-buffer) 'latex-environment
-                             (lambda (env)
-                               (cons
-                                (org-element-property :begin env)
-                                (org-element-property :value env))))
-                           collect
-                           (cond
-                            ((and (string-match "\\\\begin{equation}" env)
-                                  (not (string-match "\\\\tag{" env)))
-                             (cl-incf counter)
-                             (cons begin counter))
-                            ((string-match "\\\\begin{align}" env)
-                             (prog2
-                                 (cl-incf counter)
-                                 (cons begin counter)
-                               (with-temp-buffer
-                                 (insert env)
-                                 (goto-char (point-min))
-                                 ;; \\ is used for a new line. Each one leads to a number
-                                 (cl-incf counter (count-matches "\\\\$"))
-                                 ;; unless there are nonumbers.
-                                 (goto-char (point-min))
-                                 (cl-decf counter (count-matches "\\nonumber")))))
-                            (t
-                             (cons begin nil)))))
+  ;; Numbered equations all have (1) as the number for fragments with vanilla
+  ;; org-mode. This code injects the correct numbers into the previews so they
+  ;; look good.
+  (defun scimax-org-renumber-environment (orig-func &rest args)
+    "A function to inject numbers in LaTeX fragment previews."
+    (let ((results '())
+          (counter -1)
+          (numberp))
+      (setq results (cl-loop for (begin . env) in
+                             (org-element-map (org-element-parse-buffer) 'latex-environment
+                               (lambda (env)
+                                 (cons
+                                  (org-element-property :begin env)
+                                  (org-element-property :value env))))
+                             collect
+                             (cond
+                              ((and (string-match "\\\\begin{equation}" env)
+                                    (not (string-match "\\\\tag{" env)))
+                               (cl-incf counter)
+                               (cons begin counter))
+                              ((string-match "\\\\begin{align}" env)
+                               (prog2
+                                   (cl-incf counter)
+                                   (cons begin counter)
+                                 (with-temp-buffer
+                                   (insert env)
+                                   (goto-char (point-min))
+                                   ;; \\ is used for a new line. Each one leads to a number
+                                   (cl-incf counter (count-matches "\\\\$"))
+                                   ;; unless there are nonumbers.
+                                   (goto-char (point-min))
+                                   (cl-decf counter (count-matches "\\nonumber")))))
+                              (t
+                               (cons begin nil)))))
 
-    (when (setq numberp (cdr (assoc (point) results)))
-      (setf (car args)
-            (concat
-             (format "\\setcounter{equation}{%s}\n" numberp)
-             (car args)))))
+      (when (setq numberp (cdr (assoc (point) results)))
+        (setf (car args)
+              (concat
+               (format "\\setcounter{equation}{%s}\n" numberp)
+               (car args)))))
 
-  (apply orig-func args))
+    (apply orig-func args))
 
 
-(defun scimax-toggle-latex-equation-numbering ()
-  "Toggle whether LaTeX fragments are numbered."
-  (interactive)
-  (if (not (get 'scimax-org-renumber-environment 'enabled))
-      (progn
-        (advice-add 'org-create-formula-image :around #'scimax-org-renumber-environment)
-        (put 'scimax-org-renumber-environment 'enabled t)
-        (message "Latex numbering enabled"))
-    (advice-remove 'org-create-formula-image #'scimax-org-renumber-environment)
-    (put 'scimax-org-renumber-environment 'enabled nil)
-    (message "Latex numbering disabled.")))
+  (defun scimax-toggle-latex-equation-numbering ()
+    "Toggle whether LaTeX fragments are numbered."
+    (interactive)
+    (if (not (get 'scimax-org-renumber-environment 'enabled))
+        (progn
+          (advice-add 'org-create-formula-image :around #'scimax-org-renumber-environment)
+          (put 'scimax-org-renumber-environment 'enabled t)
+          (message "Latex numbering enabled"))
+      (advice-remove 'org-create-formula-image #'scimax-org-renumber-environment)
+      (put 'scimax-org-renumber-environment 'enabled nil)
+      (message "Latex numbering disabled.")))
 
-(advice-add 'org-create-formula-image :around #'scimax-org-renumber-environment)
-(put 'scimax-org-renumber-environment 'enabled t)
+  (advice-add 'org-create-formula-image :around #'scimax-org-renumber-environment)
+  (put 'scimax-org-renumber-environment 'enabled t))
+#+end_src
+
+** Presentations
+It is possible to give presentations in org-mode using org-tree-slide
+
+#+begin_src emacs-lisp
+(use-package! org-tree-slide
+  :after org-mode
+  :config
+  (setq org-image-actual-width nil))
 #+end_src
 
 ** Prettification
@@ -1302,14 +1483,15 @@ We don't want to see underscores and asterisks when writing italic and bold
 text.
 
 #+begin_src emacs-lisp
-(setq org-hide-emphasis-markers t)
+(after! org-mode
+  (setq org-hide-emphasis-markers t))
 #+end_src
 
 Show LaTeX fragments when moving over them
 
 #+begin_src emacs-lisp
 (use-package! org-appear
-  :after (org-mode)
+  :after org-mode
   :hook (org-mode . org-appear-mode)
   :config
   (setq org-appear-autolinks t
@@ -1322,17 +1504,28 @@ Show LaTeX fragments when moving over them
 Make all the things look pretty
 
 #+begin_src emacs-lisp
-(setq org-pretty-entities t)
+(after! org-mode
+  (setq org-pretty-entities t)
+  (add-hook! 'org-mode-hook #'+org-pretty-mode))
 
 (global-prettify-symbols-mode 1)
-(add-hook 'org-mode-hook #'+org-pretty-mode)
+#+end_src
+
+** TODO Preview
+Live preview org files in github-flavoured markdown
+
+#+begin_src emacs-lisp
+(eval-after-load "org"
+  '(require 'ox-gfm nil t))
 #+end_src
 
 ** TODO Roam
 Need to do this (see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
 
 #+begin_src emacs-lisp
-(setq org-roam-directory "/home/dylanmorgan/Documents/org/roam")
+(after! org-roam
+  (setq org-roam-directory "/home/dylanmorgan/Documents/org/roam")
+  (org-roam-db-autosync-mode))
 #+end_src
 
 org-roam-ui
@@ -1343,10 +1536,10 @@ org-roam-ui
 
 (use-package! org-roam-ui
     :after org-roam ;; or :after org
-;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-;;         a hookable mode anymore, you're advised to pick something yourself
-;;         if you don't care about startup time, use
-;;  :hook (after-init . org-roam-ui-mode)
+    ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+    ;; a hookable mode anymore, you're advised to pick something yourself
+    ;; if you don't care about startup time, use
+    ;; :hook (after-init . org-roam-ui-mode)
     :config
     (setq org-roam-ui-sync-theme t
           org-roam-ui-follow t
@@ -1358,247 +1551,276 @@ org-roam-ui
 Typing out src block headers all the time is a pain
 
 #+begin_src emacs-lisp
-(defun +yas/org-src-header-p ()
-  "Determine whether `point' is within a src-block header or header-args."
-  (pcase (org-element-type (org-element-context))
-    ('src-block (< (point) ; before code part of the src-block
-                   (save-excursion (goto-char (org-element-property :begin (org-element-context)))
-                                   (forward-line 1)
-                                   (point))))
-    ('inline-src-block (< (point) ; before code part of the inline-src-block
-                          (save-excursion (goto-char (org-element-property :begin (org-element-context)))
-                                          (search-forward "]{")
-                                          (point))))
-    ('keyword (string-match-p "^header-args" (org-element-property :value (org-element-context))))))
+(after! org-mode
+  (defun +yas/org-src-header-p ()
+    "Determine whether `point' is within a src-block header or header-args."
+    (pcase (org-element-type (org-element-context))
+      ('src-block (< (point) ; before code part of the src-block
+                     (save-excursion (goto-char (org-element-property :begin (org-element-context)))
+                                     (forward-line 1)
+                                     (point))))
+      ('inline-src-block (< (point) ; before code part of the inline-src-block
+                            (save-excursion (goto-char (org-element-property :begin (org-element-context)))
+                                            (search-forward "]{")
+                                            (point))))
+      ('keyword (string-match-p "^header-args" (org-element-property :value (org-element-context))))))
 
-(defun +yas/org-prompt-header-arg (arg question values)
-  "Prompt the user to set ARG header property to one of VALUES with QUESTION.
-The default value is identified and indicated. If either default is selected,
-or no selection is made: nil is returned."
-  (let* ((src-block-p (not (looking-back "^#\\+property:[ \t]+header-args:.*" (line-beginning-position))))
-         (default
-           (or
-            (cdr (assoc arg
-                        (if src-block-p
-                            (nth 2 (org-babel-get-src-block-info t))
-                          (org-babel-merge-params
-                           org-babel-default-header-args
-                           (let ((lang-headers
-                                  (intern (concat "org-babel-default-header-args:"
-                                                  (+yas/org-src-lang)))))
-                             (when (boundp lang-headers) (eval lang-headers t)))))))
-            ""))
-         default-value)
-    (setq values (mapcar
-                  (lambda (value)
-                    (if (string-match-p (regexp-quote value) default)
-                        (setq default-value
-                              (concat value " "
-                                      (propertize "(default)" 'face 'font-lock-doc-face)))
-                      value))
-                  values))
-    (let ((selection (consult--read question values :default default-value)))
-      (unless (or (string-match-p "(default)$" selection)
-                  (string= "" selection))
-        selection))))
+  (defun +yas/org-prompt-header-arg (arg question values)
+    "Prompt the user to set ARG header property to one of VALUES with QUESTION.
+  The default value is identified and indicated. If either default is selected,
+  or no selection is made: nil is returned."
+    (let* ((src-block-p (not (looking-back "^#\\+property:[ \t]+header-args:.*" (line-beginning-position))))
+           (default
+             (or
+              (cdr (assoc arg
+                          (if src-block-p
+                              (nth 2 (org-babel-get-src-block-info t))
+                            (org-babel-merge-params
+                             org-babel-default-header-args
+                             (let ((lang-headers
+                                    (intern (concat "org-babel-default-header-args:"
+                                                    (+yas/org-src-lang)))))
+                               (when (boundp lang-headers) (eval lang-headers t)))))))
+              ""))
+           default-value)
+      (setq values (mapcar
+                    (lambda (value)
+                      (if (string-match-p (regexp-quote value) default)
+                          (setq default-value
+                                (concat value " "
+                                        (propertize "(default)" 'face 'font-lock-doc-face)))
+                        value))
+                    values))
+      (let ((selection (consult--read question values :default default-value)))
+        (unless (or (string-match-p "(default)$" selection)
+                    (string= "" selection))
+          selection))))
 
-(defun +yas/org-src-lang ()
-  "Try to find the current language of the src/header at `point'.
-Return nil otherwise."
-  (let ((context (org-element-context)))
-    (pcase (org-element-type context)
-      ('src-block (org-element-property :language context))
-      ('inline-src-block (org-element-property :language context))
-      ('keyword (when (string-match "^header-args:\\([^ ]+\\)" (org-element-property :value context))
-                  (match-string 1 (org-element-property :value context)))))))
+  (defun +yas/org-src-lang ()
+    "Try to find the current language of the src/header at `point'. Return nil otherwise."
+    (let ((context (org-element-context)))
+      (pcase (org-element-type context)
+        ('src-block (org-element-property :language context))
+        ('inline-src-block (org-element-property :language context))
+        ('keyword (when (string-match "^header-args:\\([^ ]+\\)" (org-element-property :value context))
+                    (match-string 1 (org-element-property :value context)))))))
 
-(defun +yas/org-last-src-lang ()
-  "Return the language of the last src-block, if it exists."
-  (save-excursion
-    (beginning-of-line)
-    (when (re-search-backward "^[ \t]*#\\+begin_src" nil t)
-      (org-element-property :language (org-element-context)))))
+  (defun +yas/org-last-src-lang ()
+    "Return the language of the last src-block, if it exists."
+    (save-excursion
+      (beginning-of-line)
+      (when (re-search-backward "^[ \t]*#\\+begin_src" nil t)
+        (org-element-property :language (org-element-context)))))
 
-(defun +yas/org-most-common-no-property-lang ()
-  "Find the lang with the most source blocks that has no global header-args, else nil."
-  (let (src-langs header-langs)
+  (defun +yas/org-most-common-no-property-lang ()
+    "Find the lang with the most source blocks that has no global header-args, else nil."
+    (let (src-langs header-langs)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward "^[ \t]*#\\+begin_src" nil t)
+          (push (+yas/org-src-lang) src-langs))
+        (goto-char (point-min))
+        (while (re-search-forward "^[ \t]*#\\+property: +header-args" nil t)
+          (push (+yas/org-src-lang) header-langs)))
+
+      (setq src-langs
+            (mapcar #'car
+                    ;; sort alist by frequency (desc.)
+                    (sort
+                     ;; generate alist with form (value . frequency)
+                     (cl-loop for (n . m) in (seq-group-by #'identity src-langs)
+                              collect (cons n (length m)))
+                     (lambda (a b) (> (cdr a) (cdr b))))))
+
+      (car (cl-set-difference src-langs header-langs :test #'string=))))
+
+  (defun org-syntax-convert-keyword-case-to-lower ()
+    "Convert all #+KEYWORDS to #+keywords."
+    (interactive)
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "^[ \t]*#\\+begin_src" nil t)
-        (push (+yas/org-src-lang) src-langs))
+      (let ((count 0)
+            (case-fold-search nil))
+        (while (re-search-forward "^[ \t]*#\\+[A-Z_]+" nil t)
+          (unless (s-matches-p "RESULTS" (match-string 0))
+            (replace-match (downcase (match-string 0)) t)
+            (setq count (1+ count))))
+        (message "Replaced %d occurances" count))))
+
+  (defun org-auto-file-export ()
+    "Export to file if #+export_file_name is found in org file metadata"
+    (interactive)
+    (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "^[ \t]*#\\+property: +header-args" nil t)
-        (push (+yas/org-src-lang) header-langs)))
+      (while (re-search-forward "^[ \t]*#\\+export_file_name:*" nil t)
+      ;; (while (re-search-forward "*export_file_name:*" nil t)
+        (setq org_export_fname (org-org-export-to-org))
+        (message "Exported org file %s" org_export_fname))))
 
-    (setq src-langs
-          (mapcar #'car
-                  ;; sort alist by frequency (desc.)
-                  (sort
-                   ;; generate alist with form (value . frequency)
-                   (cl-loop for (n . m) in (seq-group-by #'identity src-langs)
-                            collect (cons n (length m)))
-                   (lambda (a b) (> (cdr a) (cdr b))))))
-
-    (car (cl-set-difference src-langs header-langs :test #'string=))))
-
-(defun org-syntax-convert-keyword-case-to-lower ()
-  "Convert all #+KEYWORDS to #+keywords."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (let ((count 0)
-          (case-fold-search nil))
-      (while (re-search-forward "^[ \t]*#\\+[A-Z_]+" nil t)
-        (unless (s-matches-p "RESULTS" (match-string 0))
-          (replace-match (downcase (match-string 0)) t)
-          (setq count (1+ count))))
-      (message "Replaced %d occurances" count))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (add-hook 'before-save-hook #'org-syntax-convert-keyword-case-to-lower nil 'make-it-local)
+              (add-hook 'after-save-hook #'org-auto-file-export nil 'make-it-local))))
 #+end_src
 
 ** TODO SRC Blocks
-Use python code blocks in org mode (as well as some other languages thrown in)
-
-Don't require :results output as a header in python SRC blocks
-
-Formatting for source code blocks
++ Use python code blocks in org mode (as well as some other languages thrown in)
++ Don't require :results output as a header in python SRC blocks
++ Formatting for source code blocks
 
 #+begin_src emacs-lisp
-(require 'ob-emacs-lisp)
-(require 'ob-fortran)
-(require 'ob-julia)
-(require 'ob-latex)
-(require 'ob-lua)
-(require 'ob-python)
-(require 'ob-shell)
+(after! org-mode
+  (require 'ob-emacs-lisp)
+  (require 'ob-fortran)
+  (require 'ob-julia)
+  (require 'ob-latex)
+  (require 'ob-lua)
+  (require 'ob-python)
+  (require 'ob-shell)
 
-(setq org-babel-default-header-args
-      (cons '(:results . "output")
-            (assq-delete-all :results org-babel-default-header-args)))
+  (setq org-babel-default-header-args
+        (cons '(:results . "output")
+              (assq-delete-all :results org-babel-default-header-args)))
 
-(setq org-src-fontify-natively t
-      org-src-preserve-indentation t
-      org-src-tab-acts-natively t)
+  (setq org-src-fontify-natively t
+        org-src-preserve-indentation t
+        org-src-tab-acts-natively t))
 #+end_src
 
 Specify shortcuts for src blocks with specific languages (not working)
 
 #+begin_src emacs-lisp
-(setq org-structure-template-alist
-      '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
-        ("f90" . "#begin_src f90\n?\n#+end_src")
-        ("f" . "#begin_src fortran\n?\n#+end_src")
-        ("jl" . "#begin_src julia\n?\n#+end_src")
-        ("tex" . "#begin_src latex\n?\n#+end_src")
-        ("lua" . "#begin_src lua\n?\n#+end_src")
-        ("py" . "#begin_src python\n?\n#+end_src")
-        ("sh" . "#begin_src shell\n?\n#+end_src")))
+;; (after! org-mode
+;;   (setq org-structure-template-alist
+;;         '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
+;;           ("f90" . "#begin_src f90\n?\n#+end_src")
+;;           ("f" . "#begin_src fortran\n?\n#+end_src")
+;;           ("jl" . "#begin_src julia\n?\n#+end_src")
+;;           ("tex" . "#begin_src latex\n?\n#+end_src")
+;;           ("lua" . "#begin_src lua\n?\n#+end_src")
+;;           ("py" . "#begin_src python\n?\n#+end_src")
+;;           ("sh" . "#begin_src shell\n?\n#+end_src"))))
 #+end_src
 
 Support lsp in SRC blocks (not working)
 
 #+begin_src emacs-lisp
-(cl-defmacro lsp-org-babel-enable (lang)
-  "Support LANG in org source code block."
-  (setq centaur-lsp 'lsp-mode)
-  (cl-check-type lang stringp)
-  (let* ((edit-pre (intern (format "org-babel-edit-prep:%s" lang)))
-         (intern-pre (intern (format "lsp--%s" (symbol-name edit-pre)))))
-    `(progn
-       (defun ,intern-pre (info)
-         (let ((file-name (->> info caddr (alist-get :file))))
-           (unless file-name
-             (setq file-name (make-temp-file "babel-lsp-")))
-           (setq buffer-file-name file-name)
-           (lsp-deferred)))
-       (put ',intern-pre 'function-documentation
-            (format "Enable lsp-mode in the buffer of org source block (%s)."
-                    (upcase ,lang)))
-       (if (fboundp ',edit-pre)
-           (advice-add ',edit-pre :after ',intern-pre)
-         (progn
-           (defun ,edit-pre (info)
-             (,intern-pre info))
-           (put ',edit-pre 'function-documentation
-                (format "Prepare local buffer environment for org source block (%s)."
-                        (upcase ,lang))))))))
-(defvar org-babel-lang-list
-  '("python" "ipython" "bash" "sh" "emacs-lisp" "fortran" "f90" "julia" "shell" "lua" "latex"))
-(dolist (lang org-babel-lang-list)
-  (eval `(lsp-org-babel-enable ,lang)))
+;; (cl-defmacro lsp-org-babel-enable (lang)
+;;   "Support LANG in org source code block."
+;;   (setq centaur-lsp 'lsp-mode)
+;;   (cl-check-type lang stringp)
+;;   (let* ((edit-pre (intern (format "org-babel-edit-prep:%s" lang)))
+;;          (intern-pre (intern (format "lsp--%s" (symbol-name edit-pre)))))
+;;     `(progn
+;;        (defun ,intern-pre (info)
+;;          (let ((file-name (->> info caddr (alist-get :file))))
+;;            (unless file-name
+;;              (setq file-name (make-temp-file "babel-lsp-")))
+;;            (setq buffer-file-name file-name)
+;;            (lsp-deferred)))
+;;        (put ',intern-pre 'function-documentation
+;;             (format "Enable lsp-mode in the buffer of org source block (%s)."
+;;                     (upcase ,lang)))
+;;        (if (fboundp ',edit-pre)
+;;            (advice-add ',edit-pre :after ',intern-pre)
+;;          (progn
+;;            (defun ,edit-pre (info)
+;;              (,intern-pre info))
+;;            (put ',edit-pre 'function-documentation
+;;                 (format "Prepare local buffer environment for org source block (%s)."
+;;                         (upcase ,lang))))))))
+;; (defvar org-babel-lang-list
+;;   '("python" "ipython" "bash" "sh" "emacs-lisp" "fortran" "f90" "julia" "shell" "lua" "latex"))
+;; (dolist (lang org-babel-lang-list)
+;;   (eval `(lsp-org-babel-enable ,lang)))
 
-(defun org-babel-edit-prep:python (babel-info)
-  (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
-  (lsp))
+;; (defun org-babel-edit-prep:python (babel-info)
+;;   (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
+;;   (lsp))
 #+end_src
 
 ** Table of Contents
 Generate a table of contents and set a shortcut
 
 #+begin_src emacs-lisp
-(use-package toc-org
+(use-package! toc-org
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(defun add-toc ()
-  (interactive)
-  (insert "* Table of Contents :toc:\n\n"))
+(after! org-mode
+  (defun add-toc ()
+    (interactive)
+    (insert "* Table of Contents :toc:\n\n"))
 
-(map! :map org-mode-map
-      :after org
-      :localleader
-      :prefix ("C" . "insert toc")
-      :desc "insert-toc"
-      "C" 'add-toc)
+  (map! :map org-mode-map
+        :after org
+        :localleader
+        :prefix ("C" . "insert toc")
+        :desc "insert-toc"
+        "C" #'add-toc))
 #+end_src
 
 ** 'TODO's
 Automatically log when a 'TODO' is marked as completed
 
 #+begin_src emacs-lisp
-(setq org-log-done 'time)
-(setq org-closed-keep-when-no-todo 'non-nil)
+(after! org-mode
+  (setq org-log-done 'time)
+  (setq org-closed-keep-when-no-todo 'non-nil))
 #+end_src
 
 * Shells
-** Eshell
+** TODO vterm
+This is basically just like opening a fish shell in a buffer in emacs
+
+#+begin_src emacs-lisp
+;; (defun custom-vterm-popup ()
+;;   (if (window-dedicated-p nil)
+;;       (message "yep")
+;;     (message "nope")))
+
+;; (map! :leader
+;;       :desc "Custom vterm popup" "o t" #'custom-vterm-popup)
+
+(use-package! vterm
+  :after vterm
+  :init
+  :config
+  (setq vterm-kill-buffer-on-exit t
+        vterm-always-compile-module t
+        vterm-ignore-blink-cursor nil))
+#+end_src
+
+** eshell
 *** STRT General
 Taken from Derek Taylor's [[https://gitlab.com/dwt1/dotfiles/-/blob/master/.emacs.d.gnu/config.org#shells][Gitlab page]].
 
 Eshell is an emacs 'shell' written in elisp.
 
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("e" . "eshell"))
-      :desc "eshell history"
-      "e h" 'counsel-esh-history
-      :desc "eshell"
-      "e s" 'eshell)
-#+end_src
-
-+ ‘eshell-syntax-highlighting’ – adds fish/zsh-like syntax highlighting.
-+ ‘eshell-rc-script’ – your profile for eshell; like a bashrc for eshell.
-+ ‘eshell-aliases-file’ – sets an aliases file for the eshell.
++ ~eshell-syntax-highlighting~ – adds fish/zsh-like syntax highlighting.
++ ~eshell-rc-script~ – your profile for eshell; like a bashrc for eshell.
++ ~eshell-aliases-file~ – sets an aliases file for the eshell.
 
 #+begin_src emacs-lisp
-(use-package eshell-syntax-highlighting
+(use-package! eshell-syntax-highlighting
   :after esh-mode
   :config
-  (eshell-syntax-highlighting-global-mode +1))
-
-(setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
-      eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
-      eshell-history-size 5000
-      eshell-buffer-maximum-lines 5000
-      eshell-hist-ignoredups t
-      eshell-scroll-to-bottom-on-input t
-      eshell-destroy-buffer-when-process-dies t
-      eshell-visual-commands'("bash" "fish" "htop" "ssh" "top" "zsh"))
+  (eshell-syntax-highlighting-global-mode +1)
+  (setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
+        eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
+        eshell-history-size 5000
+        eshell-buffer-maximum-lines 5000
+        eshell-hist-ignoredups t
+        eshell-scroll-to-bottom-on-input t
+        eshell-destroy-buffer-when-process-dies t
+        eshell-visual-commands'("fish" "htop" "ssh" "top" "zsh")))
 #+end_src
 
 Automatically close the command buffer on exit
 
 #+begin_src emacs-lisp
-(setq eshell-destroy-buffer-when-process-dies t)
+(after! esh-mode
+  (setq eshell-destroy-buffer-when-process-dies t))
 #+end_src
 
 *** Fish Completions
@@ -1612,9 +1834,9 @@ M-x shell can be made to use fish. This will disable the underlying shell
 completion.
 
 #+begin_src emacs-lisp
-;; (when (and (executable-find "fish")
-;;            (require 'fish-completion nil t))
-;;   (global-fish-completion-mode))
+(when (and (executable-find "fish")
+           (require 'fish-completion nil t))
+  (global-fish-completion-mode))
 #+end_src
 
 The condition will prevent the package from loading if fish is not found (change the executable name according to you local installation).
@@ -1629,27 +1851,27 @@ Fancier prompt:
 Edit: I actually don't like this, but will just keep it around for now.
 
 #+begin_src emacs-lisp
- ;; (defun with-face (str &rest face-plist)
- ;;    (propertize str 'face face-plist))
+;; (defun with-face (str &rest face-plist)
+;;    (propertize str 'face face-plist))
 
- ;;  (defun shk-eshell-prompt ()
- ;;    (let ((header-bg "#fff"))
- ;;      (concat
- ;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
- ;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
- ;;       (with-face
- ;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
- ;;        :background header-bg)
- ;;       (with-face "\n" :background header-bg)
- ;;       (with-face user-login-name :foreground "blue")
- ;;       "@"
- ;;       (with-face "localhost" :foreground "green")
- ;;       (if (= (user-uid) 0)
- ;;           (with-face " #" :foreground "red")
- ;;         " $")
- ;;       " ")))
- ;;  (setq eshell-prompt-function 'shk-eshell-prompt)
- ;;  (setq eshell-highlight-prompt nil)
+;;  (defun shk-eshell-prompt ()
+;;    (let ((header-bg "#fff"))
+;;      (concat
+;;       (with-face (concat (eshell/pwd) " ") :background header-bg)
+;;       (with-face (format-time-string "(%Y-%m-%d %H:%M) " (current-time)) :background header-bg :foreground "#888")
+;;       (with-face
+;;        (or (ignore-errors (format "(%s)" (vc-responsible-backend default-directory))) "")
+;;        :background header-bg)
+;;       (with-face "\n" :background header-bg)
+;;       (with-face user-login-name :foreground "blue")
+;;       "@"
+;;       (with-face "localhost" :foreground "green")
+;;       (if (= (user-uid) 0)
+;;           (with-face " #" :foreground "red")
+;;         " $")
+;;       " ")))
+;;  (setq eshell-prompt-function 'shk-eshell-prompt)
+;;  (setq eshell-highlight-prompt nil)
 #+end_src
 
 * Help
