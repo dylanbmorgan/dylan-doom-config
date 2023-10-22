@@ -1,4 +1,4 @@
-# Created 2023-10-22 Sun 01:15
+# Created 2023-10-22 Sun 14:56
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+export_file_name: ./README.org
@@ -181,14 +181,11 @@ Integrate books into emacs
 My writing can be pretty bad at times, so I need some help
 
 #+begin_src emacs-lisp
-;; (use-package lsp-grammarly
-;;   :ensure t
-;;   :hook ((text-mode tex-mode gfm-mode markdown-mode) . (lambda ()
-;;                                                          (require 'lsp-grammarly)
-;;                                                          (lsp))))  ; or lsp-deferred
-
 ;; (use-package! lsp-grammarly
 ;;   :ensure t
+;;   :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+;;                                                (require 'lsp-grammarly)
+;;                                                (lsp-deferred)))  ; or lsp-deferred
 ;;   :config
 ;;   (setq lsp-grammarly-dialect "british"
 ;;         lsp-grammarly-domain "academic"
@@ -239,8 +236,8 @@ To enable bidirectional synchronisation of LSP workspace folders and treemacs pr
 
 #+begin_src emacs-lisp
 (lsp-treemacs-sync-mode 1)
-;; (add-hook 'window-setup-hook #'+treemacs/toggle 'append)
-;; (add-hook 'window-setup-hook #'treemacs-select-window 'append)
+(add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
+(add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
 #+end_src
 
 General settings
@@ -604,7 +601,9 @@ Set default tab width to 2:
 Set indentation for fortran and f90
 
 #+begin_src emacs-lisp
-(after! f90-mode
+(use-package! f90-mode
+  :hook (f90-mode . format-all-mode)
+  :config
   (setq fortran-continuation-string "&")
   (setq fortran-do-indent 2)
   (setq fortran-if-indent 2)
@@ -739,7 +738,7 @@ Enable a company completion back-end for LaTeX maths symbols
 
 #+begin_src emacs-lisp
 (after! latex-mode
-  (setq TeX-master nil))
+  (setq-default TeX-master nil))
 #+end_src
 *** Preview Pane
 Enable LaTeX preview pane
@@ -767,7 +766,8 @@ Configure general settings for LSP
         lsp-completion-show-kind t
         lsp-signature-mode t
         lsp-signature-auto-activate t
-        lsp-signature-render-documentation t))
+        lsp-signature-render-documentation t
+        lsp-idle-delay 0.500))
 #+end_src
 *** lsp-ui
 Configure lsp-ui settings
@@ -801,7 +801,8 @@ Configure lsp-ui settings
         lsp-ui-imenu-auto-refresh t
         lsp-ui-imenu-auto-refresh-delay 1.0)
 
-  (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame))
+  (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame)
+  (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-sideline-execute-code-action))
 
 (map! :after lsp-mode
       :map lsp-mode-map
@@ -812,17 +813,32 @@ Configure lsp-ui settings
       "i" #'lsp-ui-imenu
       "I" #'lsp-ui-imenu--refresh)
 #+end_src
-*** DAP
+*** TODO DAP
 Enable the DAP debugger
 
 #+begin_src emacs-lisp
-(after! dap-mode
-  (setq dap-auto-configure-mode t)
-  (require 'dap-python)
-  ;; if you installed debugpy, you need to set this
-  ;; https://github.com/emacs-lsp/dap-mode/issues/306
-  (setq dap-python-debugger 'debugpy)
-  (require 'dap-gdb-lldb))
+;; (use-package! dap-mode
+;;   :after lsp-mode
+;;   :commands dap-debug
+;;   :hook ((python-mode . dap-ui-mode)
+;; 	 (python-mode . dap-mode))
+;;   :config
+;;   (eval-when-compile
+;;     (require 'cl))
+;;   (require 'dap-python)
+;;   (require 'dap-lldb)
+
+;;   ;; Temporal fix
+;;   (defun dap-python--pyenv-executable-find (command)
+;;     (with-venv (executable-find "python"))))
+
+;; (after! dap-mode
+;;   (setq dap-auto-configure-mode t)
+;;   (require 'dap-python)
+;;   ;; if you installed debugpy, you need to set this
+;;   ;; https://github.com/emacs-lsp/dap-mode/issues/306
+;;   (setq dap-python-debugger 'debugpy)
+;;   (require 'dap-gdb-lldb))
 #+end_src
 ** Markdown
 *** Github API rate limit
@@ -914,47 +930,60 @@ Loading jupyter instead of emacs-jupyter
 #+begin_src emacs-lisp
 (use-package! lsp-pyright
   :ensure t
-  :defer t
   :custom
   (lsp-pyright-disable-langauge-service nil)
   (lsp-pyright-disable-organize-imports nil)
   (lsp-pyright-auto-import-completions t)
   (lsp-pyright-auto-search-paths t)
   (lsp-pyright-diagnostics-mode "openFilesOnly")
-  (lsp-pyright-log-level "Information")
+  (lsp-pyright-log-level "info")
   (lsp-pyright-typechecking-mode "basic")
   (lsp-pyright-use-library-code-for-types t)
-  (lsp-completion-enable t)
-  :hook (python-mode . (lambda ()
-                          (poetry-tracking-mode)
-                          (require 'lsp-pyright)
-                          (lsp-deferred))))  ; or lsp
+  (lsp-completion-enable t))
+  ;; :hook (python-mode . (lambda ()
+  ;;                         ;; (poetry-tracking-mode)
+  ;;                         (require 'lsp-pyright)
+  ;;                         (lsp-deferred))))  ; or lsp
+#+end_src
+
+Enable pyright over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "pyright")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'pyright)
+;;         :tramp-remote-path )
 #+end_src
 **** Ruff
 
 #+begin_src emacs-lisp
-(use-package! ruff-lsp
-  :ensure t
-  :defer t
-  :custom
-  (lsp-ruff-lsp-advertize-fix-all t)
-  (lsp-ruff-lsp-advertize-organize-imports)
-  (lsp-ruff-lsp-log-level "info")
-  (lsp-ruff-lsp-python-path "python")
-  (lsp-ruff-lsp-show-notifications "onWarning"))
+;; (use-package! ruff-lsp
+;;   :ensure t
+;;   :defer t
+;;   :custom
+;;   (lsp-ruff-lsp-advertize-fix-all t)
+;;   (lsp-ruff-lsp-advertize-organize-imports)
+;;   (lsp-ruff-lsp-log-level "info")
+;;   (lsp-ruff-lsp-python-path "python")
+;;   (lsp-ruff-lsp-show-notifications "onWarning"))
 #+end_src
 
 Enable ruff over tramp
 
 #+begin_src emacs-lisp
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection (lambda () (list lsp-ruff-executable)))
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'ruff-lsp))
+(lsp-register-client
+    (make-lsp-client
+        :new-connection (lsp-tramp-connection "ruff-lsp")
+        :activation-fn (lsp-activate-on "python")
+        :major-modes '(python-mode)
+        :remote? t
+        :add-on? t
+        :server-id 'ruff-lsp))
 #+end_src
 *** TODO Prettify symbols
 Disable prettify symbols in python
@@ -978,13 +1007,12 @@ Set keybindings for poetry and disable over tramp
   :ensure t
   :defer t
   :after python
+  :hook (python-mode . (lambda ()
+                         (interactive)
+                         (if (file-remote-p default-directory)
+                             (setq package-load-list '(all
+                                                       (poetry nil))))))
   :config
-  (add-hook 'python-mode-hook
-            (lambda ()
-              (interactive)
-              (unless (file-remote-p default-directory)
-                (setq poetry-tracking-mode t))))
-
   (map! :map python-mode-map
         :localleader
         :prefix ("p" . "poetry")
@@ -1591,16 +1619,16 @@ Typing out src block headers all the time is a pain
 Specify shortcuts for src blocks with specific languages (not working)
 
 #+begin_src emacs-lisp
-(after! org-mode
-  (setq org-structure-template-alist
-        '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
-          ("f90" . "#begin_src f90\n?\n#+end_src")
-          ("f" . "#begin_src fortran\n?\n#+end_src")
-          ("jl" . "#begin_src julia\n?\n#+end_src")
-          ("tex" . "#begin_src latex\n?\n#+end_src")
-          ("lua" . "#begin_src lua\n?\n#+end_src")
-          ("py" . "#begin_src python\n?\n#+end_src")
-          ("sh" . "#begin_src shell\n?\n#+end_src"))))
+;; (after! org-mode
+;;   (setq org-structure-template-alist
+;;         '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
+;;           ("f90" . "#begin_src f90\n?\n#+end_src")
+;;           ("f" . "#begin_src fortran\n?\n#+end_src")
+;;           ("jl" . "#begin_src julia\n?\n#+end_src")
+;;           ("tex" . "#begin_src latex\n?\n#+end_src")
+;;           ("lua" . "#begin_src lua\n?\n#+end_src")
+;;           ("py" . "#begin_src python\n?\n#+end_src")
+;;           ("sh" . "#begin_src shell\n?\n#+end_src"))))
 #+end_src
 
 Support lsp in SRC blocks (not working)
@@ -1647,23 +1675,25 @@ Generate a table of contents and set a shortcut
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(defun add-toc ()
-  (interactive)
-  (insert "* Table of Contents :toc:\n\n"))
+(after! org-mode
+  (defun add-toc ()
+    (interactive)
+    (insert "* Table of Contents :toc:\n\n"))
 
-(map! :map org-mode-map
-      :after org
-      :localleader
-      :prefix ("C" . "insert toc")
-      :desc "insert-toc"
-      "C" #'add-toc)
+  (map! :map org-mode-map
+        :after org
+        :localleader
+        :prefix ("C" . "insert toc")
+        :desc "insert-toc"
+        "C" #'add-toc))
 #+end_src
 ** 'TODO's
 Automatically log when a 'TODO' is marked as completed
 
 #+begin_src emacs-lisp
-(setq org-log-done 'time)
-(setq org-closed-keep-when-no-todo 'non-nil)
+(after! org-mode
+  (setq org-log-done 'time)
+  (setq org-closed-keep-when-no-todo 'non-nil))
 #+end_src
 * Shells
 ** TODO vterm
@@ -1714,7 +1744,8 @@ Eshell is an emacs 'shell' written in elisp.
 Automatically close the command buffer on exit
 
 #+begin_src emacs-lisp
-(setq eshell-destroy-buffer-when-process-dies t)
+(after! esh-mode
+  (setq eshell-destroy-buffer-when-process-dies t))
 #+end_src
 *** Fish Completions
 This package extends the pcomplete completion framework with completion from the fish shell.
