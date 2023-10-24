@@ -129,5 +129,5 @@
 (package! org-auto-tangle)
 (package! vterm-toggle)
 (package! org-tree-slide)
-(package! format-all)
+;; (package! org-fragtog)
 ;; (package! moom)

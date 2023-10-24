@@ -133,6 +133,7 @@
        taskrunner        ; taskrunner for all your projects
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
+       tree-sitter       ; text-based syntax highlighting
        upload            ; map local to remote projects via ssh/ftp
 
        :os
@@ -144,6 +145,7 @@
        ;;agda              ; types of types of types of types...
        ;;beancount         ; mind the GAAP
        (cc
+        +tree-sitter
         +lsp)                ; C > C++ == 1
        ;;clojure           ; java with a lisp
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
@@ -162,6 +164,7 @@
        ;;factor
        ;;faust             ; dsp, but you get to keep your soul
        (fortran           ; in FORTRAN, GOD is REAL (unless declared INTEGER)
+        +tree-sitter
         +lsp)
        ;;fsharp            ; ML stands for Microsoft's Language
        ;;fstar             ; (dependent) types and (monadic) effects and Z3
@@ -171,21 +174,26 @@
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
        (json              ; At least it ain't XML
+        +tree-sitter
         +lsp)
        ;;(java +meghanada) ; the poster child for carpal tunnel syndrome
        ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
        (julia             ; a better, faster MATLAB
+        +tree-sitter
         +lsp)
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
+        +tree-sitter
         +latexmk
         +lsp
         +cdlatex)
        ;;lean              ; for folks with too much to prove
        ;;ledger            ; be audit you can be
-       (lua               ; one-based indices? one-based indices
-        +lsp)
+       ;; (lua               ; one-based indices? one-based indices
+       ;;  +tree-sitter
+       ;;  +lsp)
        (markdown          ; writing docs for people to ignore
+        +tree-sitter
         +grip)
        ;;nim               ; python + lisp at the speed of c
        ;;nix               ; I hereby declare "nix geht mehr!"
@@ -203,9 +211,10 @@
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
        (python            ; beautiful is better than ugly
+        +tree-sitter
         +pyright
-        +lsp
-        +conda)
+        +lsp)
+       ;; +conda)
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;raku              ; the artist formerly known as perl6
@@ -216,6 +225,7 @@
        ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        (sh                ; she sells {ba,z,fi}sh shells on the C xor
+        +tree-sitter
         +lsp
         +fish)
        ;;sml
@@ -224,6 +234,7 @@
        ;;terra             ; Earth and Moon in alignment for performance.
        ;;web               ; the tubes
        (yaml              ; JSON, but readable
+        +tree-sitter
         +lsp)
        ;;zig               ; C, but simpler
 

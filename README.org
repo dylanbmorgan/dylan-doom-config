@@ -1,4 +1,4 @@
-# Created 2023-10-22 Sun 14:56
+# Created 2023-10-25 Wed 00:40
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+export_file_name: ./README.org
@@ -181,15 +181,14 @@ Integrate books into emacs
 My writing can be pretty bad at times, so I need some help
 
 #+begin_src emacs-lisp
-;; (use-package! lsp-grammarly
-;;   :ensure t
-;;   :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-;;                                                (require 'lsp-grammarly)
-;;                                                (lsp-deferred)))  ; or lsp-deferred
-;;   :config
-;;   (setq lsp-grammarly-dialect "british"
-;;         lsp-grammarly-domain "academic"
-;;         lsp-grammarly-suggestions-oxford-comma t))
+(use-package! lsp-grammarly
+  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+                                               (require 'lsp-grammarly)
+                                               (lsp-deferred)))  ; or lsp-deferred
+  :custom
+  (lsp-grammarly-dialect "british")
+  (lsp-grammarly-domain "academic")
+  (lsp-grammarly-suggestions-oxford-comma t))
 #+end_src
 ** Lines
 This determines the style of line numbers in effect. If set to `nil', line numbers are disabled. For relative line numbers, set this to `relative'.
@@ -244,7 +243,7 @@ General settings
 
 #+begin_src emacs-lisp
 (use-package! treemacs
-  :ensure t
+  :defer t
   :config
   (progn
     (setq treemacs-eldoc-display                   'detailed
@@ -399,6 +398,12 @@ Use LaTeX as the default input method to type special characters
 #+begin_src emacs-lisp
 (set-input-method 'TeX)
 #+end_src
+
+Disable prettify symbols globally
+
+#+begin_src emacs-lisp
+(setq global-prettify-symbols-mode nil)
+#+end_src
 ** Minimap
 Display the minimap (doesn't work well with org files \therefore disabled)
 
@@ -492,7 +497,6 @@ Also add blur and opacity (doesn't work)
 
 #+begin_src emacs-lisp
 ;; (use-package autothemer
-;;   :ensure t)
 
 (defun random-choice (items)
   (let* ((size (length items))
@@ -533,7 +537,6 @@ Then define the keybindings to use for Github copilot
 #+begin_src emacs-lisp
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :ensure t
   :hook (prog-mode . copilot-mode)
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
          ("C-S-<tab>" . 'copilot-accept-completion-by-word)
@@ -594,27 +597,31 @@ Add keybindings to push to remote and view diffs.
 Set default tab width to 2:
 
 #+begin_src emacs-lisp
-(after! sh-mode
+(after! sh-script
   (setq sh-basic-offset 2))
 #+end_src
-** Fortran
+** TODO Fortran
+*** General
 Set indentation for fortran and f90
 
 #+begin_src emacs-lisp
-(use-package! f90-mode
-  :hook (f90-mode . format-all-mode)
-  :config
-  (setq fortran-continuation-string "&")
-  (setq fortran-do-indent 2)
-  (setq fortran-if-indent 2)
-  (setq fortran-structure-indent 2)
-
+(after! f90
   (setq f90-do-indent 2)
   (setq f90-if-indent 2)
   (setq f90-type-indent 2)
   (setq f90-program-indent 2)
   (setq f90-continuation-indent 4)
   (setq f90-smart-end 'blink))
+
+(after! fortran
+  (setq fortran-continuation-string "&")
+  (setq fortran-do-indent 2)
+  (setq fortran-if-indent 2)
+  (setq fortran-structure-indent 2))
+
+;; TODO: copy rc params file from apollo to mac
+(set-formatter! 'fprettify "fprettify"
+  :modes '(f90-mode))
 #+end_src
 
 Set Fortran and Fortran 90 mode for appropriate extensions
@@ -635,17 +642,23 @@ Set Fortran and Fortran 90 mode for appropriate extensions
 (setq auto-mode-alist
       (cons '("\\.f$" . fortran-mode) auto-mode-alist))
 #+end_src
+*** LSP
+
+#+begin_src emacs-lisp
+(use-package! lsp-mode
+  :hook (f90-mode . lsp-deferred))
+  ;; :commands lsp-deferred)
+#+end_src
 ** Julia
 *** LSP
 Automatically start when opening a julia file
 
 #+begin_src emacs-lisp
 ;; (use-package! eglot-jl
-;;   :ensure t
 ;;   :defer  t)
 
 (use-package! julia-mode
-  :ensure t
+  :defer t
   :init
   (setenv "JULIA_NUM_THREADS" "6")
   :interpreter ("julia" . julia-mode))
@@ -689,7 +702,7 @@ Also make some additions/modifications to the maths symbol alist
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! latex-mode
+(after! tex-mode
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
           ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
@@ -737,14 +750,14 @@ Enable a company completion back-end for LaTeX maths symbols
 *** General
 
 #+begin_src emacs-lisp
-(after! latex-mode
+(after! tex-mode
   (setq-default TeX-master nil))
 #+end_src
 *** Preview Pane
 Enable LaTeX preview pane
 
 #+begin_src emacs-lisp
-(after! latex-mode
+(after! tex-mode
   (require 'latex-preview-pane)
   (latex-preview-pane-enable))
 #+end_src
@@ -767,7 +780,7 @@ Configure general settings for LSP
         lsp-signature-mode t
         lsp-signature-auto-activate t
         lsp-signature-render-documentation t
-        lsp-idle-delay 0.500))
+        lsp-idle-delay 1.0))
 #+end_src
 *** lsp-ui
 Configure lsp-ui settings
@@ -785,7 +798,7 @@ Configure lsp-ui settings
         lsp-ui-peek-enable t
         lsp-ui-peek-show-directory t
         lsp-ui-doc-enable t
-        lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
+        ;; lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
         lsp-ui-doc-delay 1
         lsp-ui-doc-show-with-cursor t
         lsp-ui-doc-show-with-mouse t
@@ -817,28 +830,40 @@ Configure lsp-ui settings
 Enable the DAP debugger
 
 #+begin_src emacs-lisp
-;; (use-package! dap-mode
-;;   :after lsp-mode
-;;   :commands dap-debug
-;;   :hook ((python-mode . dap-ui-mode)
-;; 	 (python-mode . dap-mode))
-;;   :config
-;;   (eval-when-compile
-;;     (require 'cl))
-;;   (require 'dap-python)
-;;   (require 'dap-lldb)
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
 
-;;   ;; Temporal fix
-;;   (defun dap-python--pyenv-executable-find (command)
-;;     (with-venv (executable-find "python"))))
+(map! :map dap-mode-map
+      :leader
+      :prefix ("d" . "dap")
 
-;; (after! dap-mode
-;;   (setq dap-auto-configure-mode t)
-;;   (require 'dap-python)
-;;   ;; if you installed debugpy, you need to set this
-;;   ;; https://github.com/emacs-lsp/dap-mode/issues/306
-;;   (setq dap-python-debugger 'debugpy)
-;;   (require 'dap-gdb-lldb))
+      ;; basics
+      :desc "dap next"          "n" #'dap-next
+      :desc "dap step in"       "i" #'dap-step-in
+      :desc "dap step out"      "o" #'dap-step-out
+      :desc "dap continue"      "c" #'dap-continue
+      :desc "dap hydra"         "h" #'dap-hydra
+      :desc "dap debug restart" "r" #'dap-debug-restart
+      :desc "dap debug"         "s" #'dap-debug
+
+      ;; debug
+      :prefix ("dd" . "Debug")
+      :desc "dap debug recent"  "r" #'dap-debug-recent
+      :desc "dap debug last"    "l" #'dap-debug-last
+
+      ;; eval
+      :prefix ("de" . "Eval")
+      :desc "eval"                "e" #'dap-eval
+      :desc "eval region"         "r" #'dap-eval-region
+      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+      :desc "add expression"      "a" #'dap-ui-expressions-add
+      :desc "remove expression"   "d" #'dap-ui-expressions-remove
+
+      :prefix ("db" . "Breakpoint")
+      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
 #+end_src
 ** Markdown
 *** Github API rate limit
@@ -882,7 +907,13 @@ Mirror the style that markdown renders in
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 #+end_src
 ** Python
-*** Formatters
+Disable prettify-symbols in python modes
+
+#+begin_src emacs-lisp
+(after! python
+  (prettify-symbols-mode -1))
+#+end_src
+*** Formatters and Linters
 **** Black
 
 #+begin_src emacs-lisp
@@ -896,14 +927,106 @@ Mirror the style that markdown renders in
         :desc "blacken buffer" "b" #'python-black-buffer
         :desc "blacken region" "r" #'python-black-region
         :desc "blacken statement" "s" #'python-black-statement))
+
+;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
 #+end_src
-**** iSort
-Automatically reorder imports on save
+**** Pyright
 
 #+begin_src emacs-lisp
-(after! python-mode
-  (require 'py-isort)
-  (add-hook! 'before-save-hook #'py-isort-before-save))
+(after! lsp-pyright
+  (setq lsp-pyright-disable-language-services nil)
+  (setq lsp-pyright-disable-organize-imports t)
+  (setq lsp-pyright-auto-import-completions t)
+  (setq lsp-pyright-auto-search-paths t)
+  (setq lsp-pyright-diagnostic-mode "openFilesOnly")
+  (setq lsp-pyright-log-level "info")
+  (setq lsp-pyright-typechecking-mode "basic")
+  (setq lsp-pyright-use-library-code-for-types t)
+  (setq lsp-completion-enable t))
+#+end_src
+
+Enable pyright over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "pyright")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'pyright)
+;;         :tramp-remote-path )
+#+end_src
+**** Ruff
+
+#+begin_src emacs-lisp
+(use-package! lsp-mode
+  :hook (python-mode . lsp-deferred)
+  ;; :commands lsp-deferred
+  :custom
+  (lsp-ruff-lsp-ruff-path ["ruff"])
+  (lsp-ruff-lsp-ruff-args ["–fix" "–show-source" "–show-fixes" "-w" "–target-version py39" "–preview" "–config ~/.config/ruff/ruff.toml" "–statistics"])
+  (lsp-ruff-lsp-python-path "python")
+  (lsp-ruff-lsp-advertize-fix-all t)
+  (lsp-ruff-lsp-advertize-organize-imports t)
+  (lsp-ruff-lsp-log-level "info")
+  (lsp-ruff-lsp-show-notifications "onError"))
+
+(after! python
+  ;; TODO when ruff formatting leaves alpha dev
+  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+  ;;                                               (eval (when buffer-file-name
+  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
+  ;;                                               "-"))
+  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff)) 
+  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
+  (add-hook! 'before-save-hook #'lsp-organize-imports))
+#+end_src
+
+Also add ruff to flycheck
+
+#+begin_src emacs-lisp
+(after! flycheck
+  ;; (require 'flycheck)
+
+  (flycheck-define-checker python-ruff
+    "A Python syntax and style checker using the ruff utility.
+To override the path to the ruff executable, set
+`flycheck-python-ruff-executable'.
+See URL `http://pypi.python.org/pypi/ruff'."
+
+    :command ("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+              (eval (when buffer-file-name
+                      (concat "--stdin-filename=" buffer-file-name)))
+              "-")
+    :standard-input t
+    :error-filter (lambda (errors)
+                    (let ((errors (flycheck-sanitize-errors errors)))
+                      (seq-map #'flycheck-flake8-fix-error-level errors)))
+    :error-patterns
+    ((warning line-start
+              (file-name) ":" line ":" (optional column ":") " "
+              (id (one-or-more (any alpha)) (one-or-more digit)) " "
+              (message (one-or-more not-newline))
+              line-end))
+    :modes python-mode)
+  
+  (add-to-list 'flycheck-checkers 'python-ruff)
+  (provide 'flycheck-ruff))
+#+end_src
+
+Enable ruff over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "ruff-lsp")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'ruff-lsp))
 #+end_src
 *** TODO Jupyter
 Loading jupyter instead of emacs-jupyter
@@ -924,88 +1047,11 @@ Loading jupyter instead of emacs-jupyter
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
 #+end_src
-*** Linters
-**** Pyright
-
-#+begin_src emacs-lisp
-(use-package! lsp-pyright
-  :ensure t
-  :custom
-  (lsp-pyright-disable-langauge-service nil)
-  (lsp-pyright-disable-organize-imports nil)
-  (lsp-pyright-auto-import-completions t)
-  (lsp-pyright-auto-search-paths t)
-  (lsp-pyright-diagnostics-mode "openFilesOnly")
-  (lsp-pyright-log-level "info")
-  (lsp-pyright-typechecking-mode "basic")
-  (lsp-pyright-use-library-code-for-types t)
-  (lsp-completion-enable t))
-  ;; :hook (python-mode . (lambda ()
-  ;;                         ;; (poetry-tracking-mode)
-  ;;                         (require 'lsp-pyright)
-  ;;                         (lsp-deferred))))  ; or lsp
-#+end_src
-
-Enable pyright over tramp
-
-#+begin_src emacs-lisp
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection "pyright")
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'pyright)
-;;         :tramp-remote-path )
-#+end_src
-**** Ruff
-
-#+begin_src emacs-lisp
-;; (use-package! ruff-lsp
-;;   :ensure t
-;;   :defer t
-;;   :custom
-;;   (lsp-ruff-lsp-advertize-fix-all t)
-;;   (lsp-ruff-lsp-advertize-organize-imports)
-;;   (lsp-ruff-lsp-log-level "info")
-;;   (lsp-ruff-lsp-python-path "python")
-;;   (lsp-ruff-lsp-show-notifications "onWarning"))
-#+end_src
-
-Enable ruff over tramp
-
-#+begin_src emacs-lisp
-(lsp-register-client
-    (make-lsp-client
-        :new-connection (lsp-tramp-connection "ruff-lsp")
-        :activation-fn (lsp-activate-on "python")
-        :major-modes '(python-mode)
-        :remote? t
-        :add-on? t
-        :server-id 'ruff-lsp))
-#+end_src
-*** TODO Prettify symbols
-Disable prettify symbols in python
-
-I've also tried to keep ligatures but this isn't yet working
-
-#+begin_src emacs-lisp
-;; (after! python
-;;   (set-pretty-symbols! 'python-mode nil))
-
-;; (setq +pretty-code-enabled-modes '(not python-mode))
-
-;; (add-hook 'python-mode-hook (lambda ()
-;;     (setq +pretty-code-symbols-alist '(python-mode nil ))))
-#+end_src
 *** Poetry
 Set keybindings for poetry and disable over tramp
 
 #+begin_src emacs-lisp
 (use-package! poetry
-  :ensure t
-  :defer t
   :after python
   :hook (python-mode . (lambda ()
                          (interactive)
@@ -1015,10 +1061,7 @@ Set keybindings for poetry and disable over tramp
   :config
   (map! :map python-mode-map
         :localleader
-        :prefix ("p" . "poetry")
-        :desc "Add dependency" "a" #'poetry-add
-        ;; :desc "Remove dependency" "r" #' poetry-remove
-        :desc "Install dependencies" "i" #'poetry-install-install))
+        :desc "poetry" "p" #'poetry))
 #+end_src
 * Org-mode
 ** Auto Tangle
@@ -1165,7 +1208,7 @@ Provide different options for default headers for emacs org files
 Show all headings on opening an org file and assign numbers to those headings
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-startup-folded 'content)
   (setq org-startup-numerated t))
 #+end_src
@@ -1173,7 +1216,7 @@ Show all headings on opening an org file and assign numbers to those headings
 Set plain list indents such that the bullet point style signifies the indentation level
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-cycle-include-plain-lists 'integrate)
   (setq org-list-demote-modify-bullet '(("+" . "-")
                                         ("-" . "+")
@@ -1187,7 +1230,7 @@ Set plain list indents such that the bullet point style signifies the indentatio
 Automatically display images when opening an org file
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-startup-with-inline-images t))
 #+end_src
 ** Keybindings
@@ -1214,7 +1257,7 @@ Change some of the org keybinding
 Enable cdlatex by default and edit an environment after inserting one.
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-startup-with-latex-preview t)
   (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
 
@@ -1222,15 +1265,13 @@ Enable cdlatex by default and edit an environment after inserting one.
     :after #'org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 #+end_src
-*** In-line Fragments
+*** TODO In-line Fragments
 Use org-fragtog mode to automatically generate latex fragments
 
 Change Latex fragment size
 
 #+begin_src emacs-lisp
-(use-package! org-fragtog
-  :after (org-mode)
-  :hook (org-mode . org-fragtog-mode))
+;; (add-hook 'org-mode-hook 'org-fragtog-mode)
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1238,7 +1279,7 @@ Change Latex fragment size
 ;;   (org-latex-preview '(16)))
 ;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-(after! org-mode
+(after! org
   '(org-format-latex-options
     (quote
      (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
@@ -1248,7 +1289,7 @@ Change Latex fragment size
 We want fragments to look lovely
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-highlight-latex-and-related '(native script entities))
   (require 'org-src)
   (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t))))
@@ -1293,7 +1334,7 @@ Make background colour transparent
 Lets try this stuff from Scimax
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (defun scimax-org-latex-fragment-justify (justification)
     "Justify the latex fragment at point with JUSTIFICATION.
 JUSTIFICATION is a symbol for 'left, 'center or 'right."
@@ -1407,7 +1448,7 @@ It is possible to give presentations in org-mode using org-tree-slide
 
 #+begin_src emacs-lisp
 (use-package! org-tree-slide
-  :after org-mode
+  :after org
   :config
   (setq org-image-actual-width nil))
 #+end_src
@@ -1417,7 +1458,7 @@ We don't want to see underscores and asterisks when writing italic and bold
 text.
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-hide-emphasis-markers t))
 #+end_src
 
@@ -1425,7 +1466,7 @@ Show LaTeX fragments when moving over them
 
 #+begin_src emacs-lisp
 (use-package! org-appear
-  :after org-mode
+  :after org
   :hook (org-mode . org-appear-mode)
   :config
   (setq org-appear-autolinks t
@@ -1440,8 +1481,6 @@ Make all the things look pretty
 (after! org-mode
   (setq org-pretty-entities t)
   (add-hook! 'org-mode-hook #'+org-pretty-mode))
-
-(global-prettify-symbols-mode 1)
 #+end_src
 ** TODO Preview
 Live preview org files in github-flavoured markdown
@@ -1455,7 +1494,7 @@ Need to do this (see [[https://tecosaur.github.io/emacs-config/config.html#trans
 
 #+begin_src emacs-lisp
 (after! org-roam
-  (setq org-roam-directory "/home/dylanmorgan/Documents/org/roam")
+  (setq org-roam-directory "~/Documents/org/roam")
   (org-roam-db-autosync-mode))
 #+end_src
 
@@ -1466,7 +1505,7 @@ org-roam-ui
     :after org-roam)
 
 (use-package! org-roam-ui
-    :after org-roam ;; or :after org
+    :after org
     ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
     ;; a hookable mode anymore, you're advised to pick something yourself
     ;; if you don't care about startup time, use
@@ -1481,7 +1520,7 @@ org-roam-ui
 Typing out src block headers all the time is a pain
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (defun +yas/org-src-header-p ()
     "Determine whether `point' is within a src-block header or header-args."
     (pcase (org-element-type (org-element-context))
@@ -1598,7 +1637,7 @@ Typing out src block headers all the time is a pain
 - Formatting for source code blocks
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (require 'ob-emacs-lisp)
   (require 'ob-fortran)
   (require 'ob-julia)
@@ -1619,7 +1658,7 @@ Typing out src block headers all the time is a pain
 Specify shortcuts for src blocks with specific languages (not working)
 
 #+begin_src emacs-lisp
-;; (after! org-mode
+;; (after! org
 ;;   (setq org-structure-template-alist
 ;;         '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
 ;;           ("f90" . "#begin_src f90\n?\n#+end_src")
@@ -1675,7 +1714,7 @@ Generate a table of contents and set a shortcut
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(after! org-mode
+(after! org
   (defun add-toc ()
     (interactive)
     (insert "* Table of Contents :toc:\n\n"))
@@ -1691,7 +1730,7 @@ Generate a table of contents and set a shortcut
 Automatically log when a 'TODO' is marked as completed
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-log-done 'time)
   (setq org-closed-keep-when-no-todo 'non-nil))
 #+end_src
@@ -1744,7 +1783,7 @@ Eshell is an emacs 'shell' written in elisp.
 Automatically close the command buffer on exit
 
 #+begin_src emacs-lisp
-(after! esh-mode
+(after! eshell
   (setq eshell-destroy-buffer-when-process-dies t))
 #+end_src
 *** Fish Completions

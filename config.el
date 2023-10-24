@@ -54,15 +54,14 @@
 (after! highlight-indent-guides
   (highlight-indent-guides-auto-set-faces))
 
-;; (use-package! lsp-grammarly
-;;   :ensure t
-;;   :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-;;                                                (require 'lsp-grammarly)
-;;                                                (lsp-deferred)))  ; or lsp-deferred
-;;   :config
-;;   (setq lsp-grammarly-dialect "british"
-;;         lsp-grammarly-domain "academic"
-;;         lsp-grammarly-suggestions-oxford-comma t))
+(use-package! lsp-grammarly
+  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+                                               (require 'lsp-grammarly)
+                                               (lsp-deferred)))  ; or lsp-deferred
+  :custom
+  (lsp-grammarly-dialect "british")
+  (lsp-grammarly-domain "academic")
+  (lsp-grammarly-suggestions-oxford-comma t))
 
 (setq display-line-numbers-type 'relative)
 
@@ -93,7 +92,7 @@
 (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
 
 (use-package! treemacs
-  :ensure t
+  :defer t
   :config
   (progn
     (setq treemacs-eldoc-display                   'detailed
@@ -200,6 +199,8 @@
 
 (set-input-method 'TeX)
 
+(setq global-prettify-symbols-mode nil)
+
 ;; (setq minimap-mode 0)
 
 (display-time-mode 1) ; Show the time
@@ -261,7 +262,6 @@
 (setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
 
 ;; (use-package autothemer
-;;   :ensure t)
 
 (defun random-choice (items)
   (let* ((size (length items))
@@ -288,7 +288,6 @@
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :ensure t
   :hook (prog-mode . copilot-mode)
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
          ("C-S-<tab>" . 'copilot-accept-completion-by-word)
@@ -336,23 +335,26 @@
       :desc "Magit stage all" "g a" #'magit-stage-modified
       :desc "Magit unstage all" "g A" #'magit-unstage-all)
 
-(after! sh-mode
+(after! sh-script
   (setq sh-basic-offset 2))
 
-(use-package! f90-mode
-  :hook (f90-mode . format-all-mode)
-  :config
-  (setq fortran-continuation-string "&")
-  (setq fortran-do-indent 2)
-  (setq fortran-if-indent 2)
-  (setq fortran-structure-indent 2)
-
+(after! f90
   (setq f90-do-indent 2)
   (setq f90-if-indent 2)
   (setq f90-type-indent 2)
   (setq f90-program-indent 2)
   (setq f90-continuation-indent 4)
   (setq f90-smart-end 'blink))
+
+(after! fortran
+  (setq fortran-continuation-string "&")
+  (setq fortran-do-indent 2)
+  (setq fortran-if-indent 2)
+  (setq fortran-structure-indent 2))
+
+;; TODO: copy rc params file from apollo to mac
+(set-formatter! 'fprettify "fprettify"
+  :modes '(f90-mode))
 
 (setq auto-mode-alist
       (cons '("\\.F90$" . f90-mode) auto-mode-alist))
@@ -369,12 +371,15 @@
 (setq auto-mode-alist
       (cons '("\\.f$" . fortran-mode) auto-mode-alist))
 
+(use-package! lsp-mode
+  :hook (f90-mode . lsp-deferred))
+  ;; :commands lsp-deferred)
+
 ;; (use-package! eglot-jl
-;;   :ensure t
 ;;   :defer  t)
 
 (use-package! julia-mode
-  :ensure t
+  :defer t
   :init
   (setenv "JULIA_NUM_THREADS" "6")
   :interpreter ("julia" . julia-mode))
@@ -398,7 +403,7 @@
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! latex-mode
+(after! tex-mode
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
           ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
@@ -439,10 +444,10 @@
 
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 
-(after! latex-mode
+(after! tex-mode
   (setq-default TeX-master nil))
 
-(after! latex-mode
+(after! tex-mode
   (require 'latex-preview-pane)
   (latex-preview-pane-enable))
 
@@ -460,7 +465,7 @@
         lsp-signature-mode t
         lsp-signature-auto-activate t
         lsp-signature-render-documentation t
-        lsp-idle-delay 0.500))
+        lsp-idle-delay 1.0))
 
 (after! lsp-ui
   (setq lsp-ui-sideline-enable t
@@ -474,7 +479,7 @@
         lsp-ui-peek-enable t
         lsp-ui-peek-show-directory t
         lsp-ui-doc-enable t
-        lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
+        ;; lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
         lsp-ui-doc-delay 1
         lsp-ui-doc-show-with-cursor t
         lsp-ui-doc-show-with-mouse t
@@ -502,28 +507,40 @@
       "i" #'lsp-ui-imenu
       "I" #'lsp-ui-imenu--refresh)
 
-;; (use-package! dap-mode
-;;   :after lsp-mode
-;;   :commands dap-debug
-;;   :hook ((python-mode . dap-ui-mode)
-;; 	 (python-mode . dap-mode))
-;;   :config
-;;   (eval-when-compile
-;;     (require 'cl))
-;;   (require 'dap-python)
-;;   (require 'dap-lldb)
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
 
-;;   ;; Temporal fix
-;;   (defun dap-python--pyenv-executable-find (command)
-;;     (with-venv (executable-find "python"))))
+(map! :map dap-mode-map
+      :leader
+      :prefix ("d" . "dap")
 
-;; (after! dap-mode
-;;   (setq dap-auto-configure-mode t)
-;;   (require 'dap-python)
-;;   ;; if you installed debugpy, you need to set this
-;;   ;; https://github.com/emacs-lsp/dap-mode/issues/306
-;;   (setq dap-python-debugger 'debugpy)
-;;   (require 'dap-gdb-lldb))
+      ;; basics
+      :desc "dap next"          "n" #'dap-next
+      :desc "dap step in"       "i" #'dap-step-in
+      :desc "dap step out"      "o" #'dap-step-out
+      :desc "dap continue"      "c" #'dap-continue
+      :desc "dap hydra"         "h" #'dap-hydra
+      :desc "dap debug restart" "r" #'dap-debug-restart
+      :desc "dap debug"         "s" #'dap-debug
+
+      ;; debug
+      :prefix ("dd" . "Debug")
+      :desc "dap debug recent"  "r" #'dap-debug-recent
+      :desc "dap debug last"    "l" #'dap-debug-last
+
+      ;; eval
+      :prefix ("de" . "Eval")
+      :desc "eval"                "e" #'dap-eval
+      :desc "eval region"         "r" #'dap-eval-region
+      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+      :desc "add expression"      "a" #'dap-ui-expressions-add
+      :desc "remove expression"   "d" #'dap-ui-expressions-remove
+
+      :prefix ("db" . "Breakpoint")
+      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
 
 (after! grip-mode
   (setq grip-github-user "grip-github-user")
@@ -549,6 +566,9 @@
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 
+(after! python
+  (prettify-symbols-mode -1))
+
 (use-package! python-black
   :after python
   :config
@@ -560,9 +580,87 @@
         :desc "blacken region" "r" #'python-black-region
         :desc "blacken statement" "s" #'python-black-statement))
 
-(after! python-mode
-  (require 'py-isort)
-  (add-hook! 'before-save-hook #'py-isort-before-save))
+;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
+
+(after! lsp-pyright
+  (setq lsp-pyright-disable-language-services nil)
+  (setq lsp-pyright-disable-organize-imports t)
+  (setq lsp-pyright-auto-import-completions t)
+  (setq lsp-pyright-auto-search-paths t)
+  (setq lsp-pyright-diagnostic-mode "openFilesOnly")
+  (setq lsp-pyright-log-level "info")
+  (setq lsp-pyright-typechecking-mode "basic")
+  (setq lsp-pyright-use-library-code-for-types t)
+  (setq lsp-completion-enable t))
+
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "pyright")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'pyright)
+;;         :tramp-remote-path )
+
+(use-package! lsp-mode
+  :hook (python-mode . lsp-deferred)
+  ;; :commands lsp-deferred
+  :custom
+  (lsp-ruff-lsp-ruff-path ["ruff"])
+  (lsp-ruff-lsp-ruff-args ["–fix" "–show-source" "–show-fixes" "-w" "–target-version py39" "–preview" "–config ~/.config/ruff/ruff.toml" "–statistics"])
+  (lsp-ruff-lsp-python-path "python")
+  (lsp-ruff-lsp-advertize-fix-all t)
+  (lsp-ruff-lsp-advertize-organize-imports t)
+  (lsp-ruff-lsp-log-level "info")
+  (lsp-ruff-lsp-show-notifications "onError"))
+
+(after! python
+  ;; TODO when ruff formatting leaves alpha dev
+  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+  ;;                                               (eval (when buffer-file-name
+  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
+  ;;                                               "-"))
+  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff)) 
+  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
+  (add-hook! 'before-save-hook #'lsp-organize-imports))
+
+(after! flycheck
+  ;; (require 'flycheck)
+
+  (flycheck-define-checker python-ruff
+    "A Python syntax and style checker using the ruff utility.
+To override the path to the ruff executable, set
+`flycheck-python-ruff-executable'.
+See URL `http://pypi.python.org/pypi/ruff'."
+
+    :command ("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+              (eval (when buffer-file-name
+                      (concat "--stdin-filename=" buffer-file-name)))
+              "-")
+    :standard-input t
+    :error-filter (lambda (errors)
+                    (let ((errors (flycheck-sanitize-errors errors)))
+                      (seq-map #'flycheck-flake8-fix-error-level errors)))
+    :error-patterns
+    ((warning line-start
+              (file-name) ":" line ":" (optional column ":") " "
+              (id (one-or-more (any alpha)) (one-or-more digit)) " "
+              (message (one-or-more not-newline))
+              line-end))
+    :modes python-mode)
+  
+  (add-to-list 'flycheck-checkers 'python-ruff)
+  (provide 'flycheck-ruff))
+
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "ruff-lsp")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'ruff-lsp))
 
 ;; (use-package jupyter
 ;;   :after (ob-jupyter ob-python)
@@ -579,63 +677,7 @@
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
 
-(use-package! lsp-pyright
-  :ensure t
-  :custom
-  (lsp-pyright-disable-langauge-service nil)
-  (lsp-pyright-disable-organize-imports nil)
-  (lsp-pyright-auto-import-completions t)
-  (lsp-pyright-auto-search-paths t)
-  (lsp-pyright-diagnostics-mode "openFilesOnly")
-  (lsp-pyright-log-level "info")
-  (lsp-pyright-typechecking-mode "basic")
-  (lsp-pyright-use-library-code-for-types t)
-  (lsp-completion-enable t))
-  ;; :hook (python-mode . (lambda ()
-  ;;                         ;; (poetry-tracking-mode)
-  ;;                         (require 'lsp-pyright)
-  ;;                         (lsp-deferred))))  ; or lsp
-
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection "pyright")
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'pyright)
-;;         :tramp-remote-path )
-
-;; (use-package! ruff-lsp
-;;   :ensure t
-;;   :defer t
-;;   :custom
-;;   (lsp-ruff-lsp-advertize-fix-all t)
-;;   (lsp-ruff-lsp-advertize-organize-imports)
-;;   (lsp-ruff-lsp-log-level "info")
-;;   (lsp-ruff-lsp-python-path "python")
-;;   (lsp-ruff-lsp-show-notifications "onWarning"))
-
-(lsp-register-client
-    (make-lsp-client
-        :new-connection (lsp-tramp-connection "ruff-lsp")
-        :activation-fn (lsp-activate-on "python")
-        :major-modes '(python-mode)
-        :remote? t
-        :add-on? t
-        :server-id 'ruff-lsp))
-
-;; (after! python
-;;   (set-pretty-symbols! 'python-mode nil))
-
-;; (setq +pretty-code-enabled-modes '(not python-mode))
-
-;; (add-hook 'python-mode-hook (lambda ()
-;;     (setq +pretty-code-symbols-alist '(python-mode nil ))))
-
 (use-package! poetry
-  :ensure t
-  :defer t
   :after python
   :hook (python-mode . (lambda ()
                          (interactive)
@@ -645,10 +687,7 @@
   :config
   (map! :map python-mode-map
         :localleader
-        :prefix ("p" . "poetry")
-        :desc "Add dependency" "a" #'poetry-add
-        ;; :desc "Remove dependency" "r" #' poetry-remove
-        :desc "Install dependencies" "i" #'poetry-install-install))
+        :desc "poetry" "p" #'poetry))
 
 (defun insert-auto-tangle-tag ()
   "Insert auto-tangle tag in a literate config."
@@ -746,11 +785,11 @@
       org-export-in-background t
       org-fold-catch-invisible-edits 'smart)
 
-(after! org-mode
+(after! org
   (setq org-startup-folded 'content)
   (setq org-startup-numerated t))
 
-(after! org-mode
+(after! org
   (setq org-cycle-include-plain-lists 'integrate)
   (setq org-list-demote-modify-bullet '(("+" . "-")
                                         ("-" . "+")
@@ -760,7 +799,7 @@
   (setq org-list-use-circular-motion t)
   (setq org-list-allow-alphabetical t))
 
-(after! org-mode
+(after! org
   (setq org-startup-with-inline-images t))
 
 ;; (defun org-insert-newline-heading ()
@@ -777,7 +816,7 @@
       :desc "Insert Heading"
       "M-<return>" 'org-insert-heading)
 
-(after! org-mode
+(after! org
   (setq org-startup-with-latex-preview t)
   (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
 
@@ -785,9 +824,7 @@
     :after #'org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 
-(use-package! org-fragtog
-  :after (org-mode)
-  :hook (org-mode . org-fragtog-mode))
+;; (add-hook 'org-mode-hook 'org-fragtog-mode)
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -795,13 +832,13 @@
 ;;   (org-latex-preview '(16)))
 ;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-(after! org-mode
+(after! org
   '(org-format-latex-options
     (quote
      (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
       ("begin" "$1" "$" "$$" "\\(" "\\[")))))
 
-(after! org-mode
+(after! org
   (setq org-highlight-latex-and-related '(native script entities))
   (require 'org-src)
   (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t))))
@@ -834,7 +871,7 @@
 ;; (setq org-format-latex-options
 ;;       (plist-put org-format-latex-options :background "Transparent"))
 
-(after! org-mode
+(after! org
   (defun scimax-org-latex-fragment-justify (justification)
     "Justify the latex fragment at point with JUSTIFICATION.
 JUSTIFICATION is a symbol for 'left, 'center or 'right."
@@ -944,15 +981,15 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (put 'scimax-org-renumber-environment 'enabled t))
 
 (use-package! org-tree-slide
-  :after org-mode
+  :after org
   :config
   (setq org-image-actual-width nil))
 
-(after! org-mode
+(after! org
   (setq org-hide-emphasis-markers t))
 
 (use-package! org-appear
-  :after org-mode
+  :after org
   :hook (org-mode . org-appear-mode)
   :config
   (setq org-appear-autolinks t
@@ -964,20 +1001,18 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (setq org-pretty-entities t)
   (add-hook! 'org-mode-hook #'+org-pretty-mode))
 
-(global-prettify-symbols-mode 1)
-
 (eval-after-load "org"
   '(require 'ox-gfm nil t))
 
 (after! org-roam
-  (setq org-roam-directory "/home/dylanmorgan/Documents/org/roam")
+  (setq org-roam-directory "~/Documents/org/roam")
   (org-roam-db-autosync-mode))
 
 (use-package! websocket
     :after org-roam)
 
 (use-package! org-roam-ui
-    :after org-roam ;; or :after org
+    :after org
     ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
     ;; a hookable mode anymore, you're advised to pick something yourself
     ;; if you don't care about startup time, use
@@ -988,7 +1023,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 
-(after! org-mode
+(after! org
   (defun +yas/org-src-header-p ()
     "Determine whether `point' is within a src-block header or header-args."
     (pcase (org-element-type (org-element-context))
@@ -1099,7 +1134,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
               (add-hook 'before-save-hook #'org-syntax-convert-keyword-case-to-lower nil 'make-it-local)
               (add-hook 'after-save-hook #'org-auto-file-export nil 'make-it-local))))
 
-(after! org-mode
+(after! org
   (require 'ob-emacs-lisp)
   (require 'ob-fortran)
   (require 'ob-julia)
@@ -1116,7 +1151,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
         org-src-preserve-indentation t
         org-src-tab-acts-natively t))
 
-;; (after! org-mode
+;; (after! org
 ;;   (setq org-structure-template-alist
 ;;         '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
 ;;           ("f90" . "#begin_src f90\n?\n#+end_src")
@@ -1164,7 +1199,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(after! org-mode
+(after! org
   (defun add-toc ()
     (interactive)
     (insert "* Table of Contents :toc:\n\n"))
@@ -1176,7 +1211,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
         :desc "insert-toc"
         "C" #'add-toc))
 
-(after! org-mode
+(after! org
   (setq org-log-done 'time)
   (setq org-closed-keep-when-no-todo 'non-nil))
 
@@ -1209,7 +1244,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
         eshell-destroy-buffer-when-process-dies t
         eshell-visual-commands'("fish" "htop" "ssh" "top" "zsh")))
 
-(after! esh-mode
+(after! eshell
   (setq eshell-destroy-buffer-when-process-dies t))
 
 (when (and (executable-find "fish")
