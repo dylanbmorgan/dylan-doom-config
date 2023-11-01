@@ -55,9 +55,9 @@
   (highlight-indent-guides-auto-set-faces))
 
 (use-package! lsp-grammarly
-  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-                                               (require 'lsp-grammarly)
-                                               (lsp-deferred)))  ; or lsp-deferred
+  :hook ((tex-mode text-mode gfm-mode markdown-mode) . (lambda ()
+                                                         (require 'lsp-grammarly)
+                                                         (lsp-deferred)))  ; or lsp
   :custom
   (lsp-grammarly-dialect "british")
   (lsp-grammarly-domain "academic")
@@ -88,8 +88,8 @@
        :desc "Search project a" "H" #'counsel-projectile-ag))
 
 (lsp-treemacs-sync-mode 1)
-(add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
-(add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
+;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
+;; (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
 
 (use-package! treemacs
   :defer t
@@ -544,7 +544,10 @@
 
 (after! grip-mode
   (setq grip-github-user "grip-github-user")
-  (setq grip-github-password "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"))
+  (setq grip-github-password (substring
+                              (with-temp-buffer
+                                (insert-file-contents "~/.doom.d/grip_pw.txt")
+                                (buffer-string)) 0 -1)))
 
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
@@ -688,6 +691,22 @@ See URL `http://pypi.python.org/pypi/ruff'."
   (map! :map python-mode-map
         :localleader
         :desc "poetry" "p" #'poetry))
+
+(after! rustic
+   (setq rustic-format-on-save t)
+   (setq rustic-lsp-server 'rust-analyzer))
+
+;; (add-hook! 'rust-mode-hook #'prettify-symbols-mode)
+
+(after! rustic
+  (require 'dap-cpptools)
+  (dap-register-debug-template "Rust::GDB Run Configuration"
+                               (list :type "gdb"
+                                     :request "launch"
+                                     :name "GDB::Run"
+                                     :gdbpath "rust-gdb"
+                                     :target nil
+                                     :cwd nil)))
 
 (defun insert-auto-tangle-tag ()
   "Insert auto-tangle tag in a literate config."
@@ -997,9 +1016,9 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
         org-appear-autoentities t
         org-appear-autokeywords t))
 
-(after! org-mode
+(after! org
   (setq org-pretty-entities t)
-  (add-hook! 'org-mode-hook #'+org-pretty-mode))
+  (setq +org-pretty-mode t))
 
 (eval-after-load "org"
   '(require 'ox-gfm nil t))

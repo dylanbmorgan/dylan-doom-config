@@ -1,4 +1,4 @@
-# Created 2023-10-25 Wed 00:40
+# Created 2023-10-31 Tue 17:07
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+export_file_name: ./README.org
@@ -37,6 +37,7 @@
   - [[#lsp][LSP]]
   - [[#markdown][Markdown]]
   - [[#python][Python]]
+  - [[#rust][Rust]]
 - [[#org-mode][Org-mode]]
   - [[#auto-tangle][Auto Tangle]]
   - [[#agenda][Agenda]]
@@ -182,9 +183,9 @@ My writing can be pretty bad at times, so I need some help
 
 #+begin_src emacs-lisp
 (use-package! lsp-grammarly
-  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-                                               (require 'lsp-grammarly)
-                                               (lsp-deferred)))  ; or lsp-deferred
+  :hook ((tex-mode text-mode gfm-mode markdown-mode) . (lambda ()
+                                                         (require 'lsp-grammarly)
+                                                         (lsp-deferred)))  ; or lsp
   :custom
   (lsp-grammarly-dialect "british")
   (lsp-grammarly-domain "academic")
@@ -235,8 +236,8 @@ To enable bidirectional synchronisation of LSP workspace folders and treemacs pr
 
 #+begin_src emacs-lisp
 (lsp-treemacs-sync-mode 1)
-(add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
-(add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
+;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
+;; (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
 #+end_src
 
 General settings
@@ -600,7 +601,7 @@ Set default tab width to 2:
 (after! sh-script
   (setq sh-basic-offset 2))
 #+end_src
-** TODO Fortran
+** Fortran
 *** General
 Set indentation for fortran and f90
 
@@ -867,12 +868,15 @@ Enable the DAP debugger
 #+end_src
 ** Markdown
 *** Github API rate limit
-Github has a rate limit, limiting how long grip-mode will work for. The following should get around this:
+Github has a rate limit, limiting how long grip-mode will work for. The following should get around this. This also uses a github authentication token and parses it from a file stored in this directory so it doesn't get made public when I publish this to github.
 
 #+begin_src emacs-lisp
 (after! grip-mode
   (setq grip-github-user "grip-github-user")
-  (setq grip-github-password "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"))
+  (setq grip-github-password (substring
+                              (with-temp-buffer
+                                (insert-file-contents "~/.doom.d/grip_pw.txt")
+                                (buffer-string)) 0 -1)))
 #+end_src
 *** Line Wrapping
 Use visual line wrapping
@@ -1062,6 +1066,29 @@ Set keybindings for poetry and disable over tramp
   (map! :map python-mode-map
         :localleader
         :desc "poetry" "p" #'poetry))
+#+end_src
+** Rust
+*** Formatters and Linters
+
+#+begin_src emacs-lisp
+(after! rustic
+   (setq rustic-format-on-save t)
+   (setq rustic-lsp-server 'rust-analyzer))
+
+;; (add-hook! 'rust-mode-hook #'prettify-symbols-mode)
+#+end_src
+*** DAP
+
+#+begin_src emacs-lisp
+(after! rustic
+  (require 'dap-cpptools)
+  (dap-register-debug-template "Rust::GDB Run Configuration"
+                               (list :type "gdb"
+                                     :request "launch"
+                                     :name "GDB::Run"
+                                     :gdbpath "rust-gdb"
+                                     :target nil
+                                     :cwd nil)))
 #+end_src
 * Org-mode
 ** Auto Tangle
@@ -1478,9 +1505,9 @@ Show LaTeX fragments when moving over them
 Make all the things look pretty
 
 #+begin_src emacs-lisp
-(after! org-mode
+(after! org
   (setq org-pretty-entities t)
-  (add-hook! 'org-mode-hook #'+org-pretty-mode))
+  (setq +org-pretty-mode t))
 #+end_src
 ** TODO Preview
 Live preview org files in github-flavoured markdown

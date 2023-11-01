@@ -129,5 +129,6 @@
 (package! org-auto-tangle)
 (package! vterm-toggle)
 (package! org-tree-slide)
+(package! ox-reveal)
 ;; (package! org-fragtog)
 ;; (package! moom)
