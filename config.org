@@ -20,6 +20,7 @@
   - [[#projectile][Projectile]]
   - [[#treemacs][Treemacs]]
   - [[#tramp][Tramp]]
+  - [[#web][Web]]
   - [[#windows][Windows]]
 - [[#appearance][Appearance]]
   - [[#fonts][Fonts]]
@@ -158,6 +159,7 @@ Integrate books into emacs
 + Replace I-search binding with swiper
 + Include a 'leader-undo' button
 + Visual fix for indent guides
++ Disable massive toolbar on MacOS
 
 #+begin_src emacs-lisp
 (setq shell-file-name (executable-find "bash"))
@@ -185,6 +187,9 @@ Integrate books into emacs
 
 (after! highlight-indent-guides
   (highlight-indent-guides-auto-set-faces))
+
+(when (string= (system-name) "maccie")
+  (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
 #+end_src
 
 ** TODO Grammarly
@@ -192,9 +197,9 @@ My writing can be pretty bad at times, so I need some help
 
 #+begin_src emacs-lisp
 (use-package! lsp-grammarly
-  :hook ((tex-mode text-mode gfm-mode markdown-mode) . (lambda ()
-                                                         (require 'lsp-grammarly)
-                                                         (lsp-deferred)))  ; or lsp
+  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+                                               (require 'lsp-grammarly)
+                                               (lsp-deferred)))  ; or lsp
   :custom
   (lsp-grammarly-dialect "british")
   (lsp-grammarly-domain "academic")
@@ -337,6 +342,13 @@ Smart parentheses
  '(org-mode)
  "<<" ">>"
  :actions '(insert))
+#+end_src
+
+** Web
+Default to opening links in emacs webkit
+
+#+begin_src emacs-lisp
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
 #+end_src
 
 ** Windows
@@ -516,7 +528,7 @@ There are two ways to load a theme. Both assume the theme is installed and avail
 
 I've found a few themes I like, so here we will load a random one on opening emacs
 
-Also add blur and opacity (doesn't work)
+Also add blur and opacity (blur doesn't work)
 
 #+begin_src emacs-lisp
 ;; (use-package autothemer
@@ -537,18 +549,13 @@ Also add blur and opacity (doesn't work)
 ;; (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
 ;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
 
-;; (doom/set-frame-opacity 92)
+(doom/set-frame-opacity 100)
+;; (doom/set-frame-opacity 95)
+;; (doom/set-frame-opacity 85)
 #+end_src
 
 * Languages
 ** General
-*** Rainbow Delimiters
-Better syntax highlighting for code
-
-#+begin_src emacs-lisp
-(add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-#+end_src
-
 *** Github Copilot
 Firstly unbind aya-create from C-TAB
 
@@ -562,19 +569,37 @@ Then define the keybindings to use for Github copilot
 #+begin_src emacs-lisp
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :hook (prog-mode . copilot-mode)
+  :hook ((prog-mode . copilot-mode)
+         (sh-mode . copilot-mode))
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
          ("C-S-<tab>" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
          ("C-TAB" . 'copilot-accept-completion-by-line)
          ("C-<tab>" . 'copilot-accept-completion-by-line)
          ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion))
-  :config
-  (when (string= (system-name) "apollo")
-    (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
-  (when (string= (system-name) "maccie")
-    (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+         ("C-M-<tab>" . 'copilot-accept-completion)))
+  ;; :config
+  ;; (when (string= (system-name) "apollo")
+  ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
+  ;; (when (string= (system-name) "maccie")
+  ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+#+end_src
+
+*** Rainbow Delimiters
+Better syntax highlighting for code
+
+#+begin_src emacs-lisp
+(add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
+(add-hook! 'sh-mode-hook #'rainbow-delimiters-mode)
+#+end_src
+
+*** Visual Line Mode
+Enable word wrapping almost everywhere
+
+#+begin_src emacs-lisp
+(+global-word-wrap-mode +1)
+;; (add-hook! 'prog-mode-hook #'+word-wrap-mode)
+;; (add-hook! 'sh-mode-hook #'+word-wrap-mode)
 #+end_src
 
 ** TODO Docker
@@ -621,6 +646,18 @@ Add keybindings to push to remote and view diffs.
 #+end_src
 
 ** Bash
+*** Default Scripting Shell
+Always use the bash shell for scripting
+
+#+begin_src emacs-lisp
+(after! sh-script
+  (sh-set-shell "bash"))
+  ;; (when (equal (string-match-p (regexp-quote "*PKGBUILD")
+  ;;                              (buffer-file-name))
+  ;;              "PKGBUILD")
+  ;;   (sh-set-shell "bash")))
+#+end_src
+
 *** Tab Spacing
 Set default tab width to 2:
 
@@ -720,7 +757,7 @@ Change directory for LanguageServer.jl and SymbolServer.jl
 #+end_src
 
 ** LaTeX
-See [[https://tecosaur.github.io/emacs-config/config.html#transc  lusion][tecosaur's config]], but might just keep using overleaf
+See [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]], but might just keep using overleaf
 
 *** CDLaTeX
 Set new environments for:
@@ -789,6 +826,27 @@ Enable a company completion back-end for LaTeX maths symbols
   (setq-default TeX-master nil))
 #+end_src
 
+*** LSP
+Set the lsp servers for use in latex mode
+
+#+begin_src emacs-lisp
+;; (use-package! lsp-ltex
+;;   :hook (text-mode . (lambda ()
+;;                        (require 'lsp-ltex)
+;;                        (lsp-deferred)))  ; or lsp
+;;   :init
+;;   (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
+
+(after! tex-mode
+  (add-to-list 'load-path "/opt/homebrew/bin/texlab")
+  (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab")
+  (with-eval-after-load "tex-mode"
+    (add-hook 'tex-mode-hook 'lsp)
+    (add-hook 'latex-mode-hook 'lsp))
+  (with-eval-after-load "bibtex"
+    (add-hook 'bibtex-mode-hook 'lsp)))
+#+end_src
+
 *** Preview Pane
 Enable LaTeX preview pane
 
@@ -796,6 +854,16 @@ Enable LaTeX preview pane
 (after! tex-mode
   (require 'latex-preview-pane)
   (latex-preview-pane-enable))
+#+end_src
+
+*** RefTeX
+Change the default method of adding/searching for citations with reftex
+
+#+begin_src emacs-lisp
+(map! :map reftex-mode-map
+      :localleader
+      :desc "reftex-cite" "r" #'reftex-citation
+      :desc "reftex-label" "l" #'reftex-label)
 #+end_src
 
 ** LSP
@@ -929,15 +997,11 @@ Use visual line wrapping
 Automatically open live preview when opening a markdown file
 
 #+begin_src emacs-lisp
-(add-hook! 'markdown-mode-hook #'grip-mode)
-
-(when (string= (system-name) "maccie")
-  (setq grip-binary-path "/opt/homebrew/bin/grip"))
-(when (string= (system-name) "apollo")
-  (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
-
-(setq grip-preview-use-webkit t
-      grip-sleep-time 2)
+(after! markdown-mode
+  ;; (add-hook! 'markdown-mode-hook #'grip-mode)
+  (setq grip-sleep-time 2
+        grip-preview-use-webkit t
+        grip-binary-path "~/.local/bin/grip"))
 #+end_src
 
 *** Markdown Style Customisation
@@ -951,6 +1015,46 @@ Mirror the style that markdown renders in
   '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
+#+end_src
+*** Obsidian
+
+#+begin_src emacs-lisp
+;; (use-package! obsidian
+;;   :ensure t
+;;   :demand t
+;;   :custom
+;;   ;; This directory will be used for `obsidian-capture' if set.
+;;   (obsidian-inbox-directory "inbox")
+;;   ;; Create missing files in inbox? - when clicking on a wiki link
+;;   ;; t: in inbox, nil: next to the file with the link
+;;   ;; default: t
+;;   ;(obsidian-wiki-link-create-file-in-inbox nil)
+;;   ;; The directory for daily notes (file name is YYYY-MM-DD.md)
+;;   (obsidian-daily-notes-directory "daily_notes")
+;;   ;; Directory of note templates, unset (nil) by default
+;;   ;(obsidian-templates-directory "Templates")
+;;   ;; Daily Note template name - requires a template directory. Default: Daily Note Template.md
+;;   ;(setq obsidian-daily-note-template "Daily Note Template.md")
+;;   :config
+;;   (obsidian-specify-path "~/Documents/obsidian/")
+;;   ;; Activate detection of Obsidian vault
+;;   (global-obsidian-mode t)
+;;   (map! :map obsidian-mode-map
+;;         :localleader
+;;         :prefix ("O" . "Obsidian")
+;;         ;; Replace C-c C-o with Obsidian.el's implementation. It's ok to use another key binding.
+;;         :desc "follow link" "o" #'obsidian-follow-link-at-point
+;;         ;; Jump to backlinks
+;;         :desc "backlink jump" "b" #'obsidian-backlink-jump
+;;         :desc "insert link" "l" #'obsidian-insert-wikilink
+;;         ;; If you prefer you can use `obsidian-insert-link'
+;;         :desc "insert wikilink" "w" #'obsidian-insert-wikilink
+;;         ;; Open a note
+;;         :desc "jump" "j" #'obsidian-jump
+;;         ;; Capture a new note in the inbox
+;;         :desc "capture" "c" #'obsidian-capture
+;;         ;; Create a daily note
+;;         :desc "daily note" #'obsidian-daily-note)
 #+end_src
 
 ** Python
@@ -1196,12 +1300,16 @@ See [[https://tecosaur.github.io/emacs-config/config.html#exporting][tecosaur ag
 
 I like to export markdown files written in org as README.org. I'm creating a shortcut to use for this in future.
 
+I also export a lot of org files to markdown so I will also add another shortcut for that command here.
+
 #+begin_src emacs-lisp
 (map! :map org-mode-map
       :after org
       :localleader
       :desc "org-export-to-org"
-      "E" 'org-org-export-to-org)
+      "E" 'org-org-export-to-org
+      :desc "org-export-as-md"
+      "M" 'org-pandoc-export-to-markdown)
 #+end_src
 
 ** File Conversions

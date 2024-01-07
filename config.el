@@ -54,10 +54,13 @@
 (after! highlight-indent-guides
   (highlight-indent-guides-auto-set-faces))
 
+(when (string= (system-name) "maccie")
+  (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
+
 (use-package! lsp-grammarly
-  :hook ((tex-mode text-mode gfm-mode markdown-mode) . (lambda ()
-                                                         (require 'lsp-grammarly)
-                                                         (lsp-deferred)))  ; or lsp
+  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
+                                               (require 'lsp-grammarly)
+                                               (lsp-deferred)))  ; or lsp
   :custom
   (lsp-grammarly-dialect "british")
   (lsp-grammarly-domain "academic")
@@ -154,6 +157,8 @@
  '(org-mode)
  "<<" ">>"
  :actions '(insert))
+
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
 
 ;; (setq moom-user-margin '(50 50 50 50)) ; {top, bottom, left, right}
 ;; (moom-mode 1)
@@ -279,28 +284,36 @@
 ;; (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
 ;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
 
-;; (doom/set-frame-opacity 92)
-
-(add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
+(doom/set-frame-opacity 100)
+;; (doom/set-frame-opacity 95)
+;; (doom/set-frame-opacity 85)
 
 (map! :nvi "C-TAB" nil)
 (map! :nvi "C-<tab>" nil)
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :hook (prog-mode . copilot-mode)
+  :hook ((prog-mode . copilot-mode)
+         (sh-mode . copilot-mode))
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
          ("C-S-<tab>" . 'copilot-accept-completion-by-word)
          :map copilot-completion-map
          ("C-TAB" . 'copilot-accept-completion-by-line)
          ("C-<tab>" . 'copilot-accept-completion-by-line)
          ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion))
-  :config
-  (when (string= (system-name) "apollo")
-    (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
-  (when (string= (system-name) "maccie")
-    (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+         ("C-M-<tab>" . 'copilot-accept-completion)))
+  ;; :config
+  ;; (when (string= (system-name) "apollo")
+  ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
+  ;; (when (string= (system-name) "maccie")
+  ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+
+(add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
+(add-hook! 'sh-mode-hook #'rainbow-delimiters-mode)
+
+(+global-word-wrap-mode +1)
+;; (add-hook! 'prog-mode-hook #'+word-wrap-mode)
+;; (add-hook! 'sh-mode-hook #'+word-wrap-mode)
 
 ;; Uncomment the next line if you are using this from source
 ;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
@@ -334,6 +347,13 @@
       :desc "Magit stash" "g z" #'magit-stash
       :desc "Magit stage all" "g a" #'magit-stage-modified
       :desc "Magit unstage all" "g A" #'magit-unstage-all)
+
+(after! sh-script
+  (sh-set-shell "bash"))
+  ;; (when (equal (string-match-p (regexp-quote "*PKGBUILD")
+  ;;                              (buffer-file-name))
+  ;;              "PKGBUILD")
+  ;;   (sh-set-shell "bash")))
 
 (after! sh-script
   (setq sh-basic-offset 2))
@@ -447,9 +467,30 @@
 (after! tex-mode
   (setq-default TeX-master nil))
 
+;; (use-package! lsp-ltex
+;;   :hook (text-mode . (lambda ()
+;;                        (require 'lsp-ltex)
+;;                        (lsp-deferred)))  ; or lsp
+;;   :init
+;;   (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
+
+(after! tex-mode
+  (add-to-list 'load-path "/opt/homebrew/bin/texlab")
+  (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab")
+  (with-eval-after-load "tex-mode"
+    (add-hook 'tex-mode-hook 'lsp)
+    (add-hook 'latex-mode-hook 'lsp))
+  (with-eval-after-load "bibtex"
+    (add-hook 'bibtex-mode-hook 'lsp)))
+
 (after! tex-mode
   (require 'latex-preview-pane)
   (latex-preview-pane-enable))
+
+(map! :map reftex-mode-map
+      :localleader
+      :desc "reftex-cite" "r" #'reftex-citation
+      :desc "reftex-label" "l" #'reftex-label)
 
 (after! lsp-mode
   (setq lsp-enable-symbol-highlighting t
@@ -551,15 +592,11 @@
 
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
-(add-hook! 'markdown-mode-hook #'grip-mode)
-
-(when (string= (system-name) "maccie")
-  (setq grip-binary-path "/opt/homebrew/bin/grip"))
-(when (string= (system-name) "apollo")
-  (setq grip-binary-path "/home/dylanmorgan/.local/bin/grip"))
-
-(setq grip-preview-use-webkit t
-      grip-sleep-time 2)
+(after! markdown-mode
+  ;; (add-hook! 'markdown-mode-hook #'grip-mode)
+  (setq grip-sleep-time 2
+        grip-preview-use-webkit t
+        grip-binary-path "~/.local/bin/grip"))
 
 (custom-set-faces!
   '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
@@ -568,6 +605,43 @@
   '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
+
+;; (use-package! obsidian
+;;   :ensure t
+;;   :demand t
+;;   :custom
+;;   ;; This directory will be used for `obsidian-capture' if set.
+;;   (obsidian-inbox-directory "inbox")
+;;   ;; Create missing files in inbox? - when clicking on a wiki link
+;;   ;; t: in inbox, nil: next to the file with the link
+;;   ;; default: t
+;;   ;(obsidian-wiki-link-create-file-in-inbox nil)
+;;   ;; The directory for daily notes (file name is YYYY-MM-DD.md)
+;;   (obsidian-daily-notes-directory "daily_notes")
+;;   ;; Directory of note templates, unset (nil) by default
+;;   ;(obsidian-templates-directory "Templates")
+;;   ;; Daily Note template name - requires a template directory. Default: Daily Note Template.md
+;;   ;(setq obsidian-daily-note-template "Daily Note Template.md")
+;;   :config
+;;   (obsidian-specify-path "~/Documents/obsidian/")
+;;   ;; Activate detection of Obsidian vault
+;;   (global-obsidian-mode t)
+;;   (map! :map obsidian-mode-map
+;;         :localleader
+;;         :prefix ("O" . "Obsidian")
+;;         ;; Replace C-c C-o with Obsidian.el's implementation. It's ok to use another key binding.
+;;         :desc "follow link" "o" #'obsidian-follow-link-at-point
+;;         ;; Jump to backlinks
+;;         :desc "backlink jump" "b" #'obsidian-backlink-jump
+;;         :desc "insert link" "l" #'obsidian-insert-wikilink
+;;         ;; If you prefer you can use `obsidian-insert-link'
+;;         :desc "insert wikilink" "w" #'obsidian-insert-wikilink
+;;         ;; Open a note
+;;         :desc "jump" "j" #'obsidian-jump
+;;         ;; Capture a new note in the inbox
+;;         :desc "capture" "c" #'obsidian-capture
+;;         ;; Create a daily note
+;;         :desc "daily note" #'obsidian-daily-note)
 
 (after! python
   (prettify-symbols-mode -1))
@@ -739,7 +813,9 @@ See URL `http://pypi.python.org/pypi/ruff'."
       :after org
       :localleader
       :desc "org-export-to-org"
-      "E" 'org-org-export-to-org)
+      "E" 'org-org-export-to-org
+      :desc "org-export-as-md"
+      "M" 'org-pandoc-export-to-markdown)
 
 (use-package! org-pandoc-import
   :after org)
