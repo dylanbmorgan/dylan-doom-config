@@ -11,10 +11,12 @@
 - [[#setup][Setup]]
   - [[#lexical-binding][Lexical Binding]]
   - [[#buffers][Buffers]]
+  - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
+  - [[#ellama][Ellama]]
   - [[#file-types][File types]]
   - [[#general][General]]
-  - [[#grammarly][Grammarly]]
+  - [[#gptel][gptel]]
   - [[#lines][Lines]]
   - [[#personal-information][Personal Information]]
   - [[#projectile][Projectile]]
@@ -66,827 +68,6 @@
   - [[#eshell][eshell]]
   - [[#prompt][Prompt]]
 - [[#help][Help]]
-
-* Introduction
-GNU Emacs is an extendable and highly customizable text editor. It is based on an Emacs Lisp interpreter with extensions for text editing. Emacs has been extended in essentially all areas of computing, giving rise to a vast array of packages supporting, e.g., email, IRC and XMPP messaging, spreadsheets, remote server editing, and much more. Emacs includes extensive documentation on all aspects of the system, from basic editing to writing large Lisp programs. It has full Unicode support for nearly all human languages.
-
-Official documentation: https://www.gnu.org/software/emacs/#Manuals
-
-Doom Emacs Github repository: [[https://github.com/doomemacs/doomemacs]]
-
-This is the Doom Emacs configuration of Dylan Morgan
-+ Github: https://github.com/dylanbmorgan
-+ Email: dbmorgan98@gmail.com
-
-That being said, this is blatantly plagiarised from [[https://tecosaur.github.io/emacs-config/config.html#super-agenda][tecosaur's config]]
-
-** Installation Instructions
-1. Follow the instructions to install Doom Emacs from [[https://github.com/doomemacs/doomemacs/blob/master/docs/index.org][here]]
-2. ~cd ~/.doom.d/~
-3. ~git clone https://github.com/dylanbmorgan/dylan-doom-config~
-4. Install the necessary programs when you inevitably get lots of errors!
-5. Waste lots of time learning how to use emacs, tweaking the configuration yourself, get frustrated, and ultimately return to using vim or VScode
-
-* Setup
-** Lexical Binding
-Make this file run (slightly) faster with lexical binding (see [[https://nullprogram.com/blog/2016/12/22/][this]] blog post for more info).
-
-I think this has to go at the top of the file (almost like a shebang)
-
-#+begin_src emacs-lisp
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-#+end_src
-
-** Buffers
-+ I’d much rather have my new buffers in org-mode than fundamental-mode
-+ Nicer default buffer names
-+ Only include the buffer name in the title, and then if applicable, the project folder
-  - Also mark if the file has unsaved changes
-
-#+begin_src emacs-lisp
-;; (setq-default major-mode 'org-mode)
-
-(setq doom-fallback-buffer-name "► Doom"
-      +doom-dashboard-name "► Doom")
-
-(setq frame-title-format
-      '(""
-        (:eval
-         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "☰ "
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (unless (string= "-" project-name)
-             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
-#+end_src
-
-** Delays
-I like to have custom delays for company mode, the leader key, and the spell checker:
-
-#+begin_src emacs-lisp
-(setq which-key-idle-delay 0.2)
-
-(setq company-idle-delay 0.3
-      company-maximum-prefix-length 3)
-
-(after! spell-fu
-  (setq spell-fu-idle-delay 0.5))
-#+end_src
-
-** File types
-*** Ebooks
-Integrate books into emacs
-
-#+begin_src emacs-lisp
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-#+end_src
-
-** General
-+ Let Emacs know I am using fish as my default shell
-+ Delete files to trash
-+ Stretch cursor to the glyph width
-+ Raise undo limit to 80MB
-+ Whether actions are undone in several steps
-+ Nobody likes to lose work
-+ How many seconds passwords are cached
-+ Controls if scroll commands move point to keep its screen position unchanged
-+ Number of lines of margin at the top and bottom of a window
-+ Show traceback on error
-+ Iterate through CamelCase words
-+ Replace I-search binding with swiper
-+ Include a 'leader-undo' button
-+ Visual fix for indent guides
-+ Disable massive toolbar on MacOS
-
-#+begin_src emacs-lisp
-(setq shell-file-name (executable-find "bash"))
-(setq vterm-shell (executable-find "fish"))
-(setq explicit-shell-file-name (executable-find "fish"))
-
-(setq delete-by-moving-to-trash t
-      x-stretch-cursor t)
-
-(setq undo-limit 80000000
-      evil-want-fine-undo t
-      auto-save-default t
-      password-cache-expiry 30
-      scroll-preserve-screen-position 'always
-      scroll-margin 4)
-      ;; debug-on-error t)
-
-(global-subword-mode t)
-
-(map! [?\C-s] #'swiper)
-
-;; TODO
-;; (map! which-key-mode-map
-;;       "DEL" #'which-key-undo)
-
-(after! highlight-indent-guides
-  (highlight-indent-guides-auto-set-faces))
-
-(when (string= (system-name) "maccie")
-  (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
-#+end_src
-
-** TODO Grammarly
-My writing can be pretty bad at times, so I need some help
-
-#+begin_src emacs-lisp
-(use-package! lsp-grammarly
-  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-                                               (require 'lsp-grammarly)
-                                               (lsp-deferred)))  ; or lsp
-  :custom
-  (lsp-grammarly-dialect "british")
-  (lsp-grammarly-domain "academic")
-  (lsp-grammarly-suggestions-oxford-comma t))
-#+end_src
-
-** Lines
-This determines the style of line numbers in effect. If set to `nil', line numbers are disabled. For relative line numbers, set this to `relative'.
-
-Automatically wrap text when it reaches the end of the screen
-
-#+begin_src emacs-lisp
-(setq display-line-numbers-type 'relative)
-
-(add-hook 'text-mode-hook 'turn-on-visual-line-mode)
-(setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
-
-;; (setq-default auto-fill-function 'do-auto-fill)
-#+end_src
-
-** Personal Information
-Some functionality uses this to identify you, e.g. GPG configuration, email
-clients, file templates, and snippets.
-
-#+begin_src emacs-lisp
-(setq user-full-name "Dylan Morgan"
-      user-mail-address "dbmorgan98@gmail.com")
-#+end_src
-
-** Projectile
-Change the default sort order so it lists the most recent files and directories
-opened first and enable project caching
-
-#+begin_src emacs-lisp
-(setq projectile-sort-order 'recentf
-      projectile-auto-discover t)
-
-(setq projectile-enable-caching t)
-(setq projectile-file-exists-remote-cache-expire (* 10 60))
-
-(map! :leader
-      (:prefix-map ("p" . "project")
-       :desc "Search project rg" "h" #'counsel-projectile-rg))
-
-(map! :leader
-      (:prefix-map ("p" . "project")
-       :desc "Search project a" "H" #'counsel-projectile-ag))
-
-#+end_src
-
-** Treemacs
-To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
-
-#+begin_src emacs-lisp
-(lsp-treemacs-sync-mode 1)
-;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
-;; (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
-#+end_src
-
-General settings
-
-#+begin_src emacs-lisp
-(use-package! treemacs
-  :defer t
-  :config
-  (progn
-    (setq treemacs-eldoc-display                   'detailed
-          treemacs-find-workspace-method           'find-for-file-or-pick-first
-          treemacs-missing-project-action          'remove
-          treemacs-move-forward-on-expand          t
-          treemacs-project-follow-cleanup          t
-          treemacs-indent-guide-style              'line
-          treemacs-recenter-distance               0.2
-          treemacs-recenter-after-file-follow      'always
-          treemacs-recenter-after-tag-follow       'always
-          treemacs-recenter-after-project-jump     'always
-          treemacs-recenter-after-project-expand   'always
-          treemacs-project-follow-into-home        t
-          treemacs-show-hidden-files               nil
-          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
-          treemacs-select-when-already-in-treemacs 'next-or-back
-          treemacs-tag-follow-delay                1.0
-          treemacs-width-increment                 5)
-
-    ;; The default width and height of the icons is 22 pixels. If you are
-    ;; using a Hi-DPI display, uncomment this to double the icon size.
-    ;;(treemacs-resize-icons 44)
-    (treemacs-follow-mode t)
-    (treemacs-project-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode t)
-    (when treemacs-python-executable
-      (treemacs-git-commit-diff-mode t))
-
-    (pcase (cons (not (null (executable-find "git")))
-                 (not (null treemacs-python-executable)))
-      (`(t . t)
-       (treemacs-git-mode 'deferred))
-      (`(t . _)
-       (treemacs-git-mode 'simple))))
-
-  ;; :bind
-  (map! :nvi "M-0" nil)  ; unbind from go to last workspace
-  (map! "M-0" #'treemacs-select-window))
-  ;;       ("C-x t 1"   . treemacs-delete-other-windows)
-  ;;       ("C-x t t"   . treemacs)
-  ;;       ("C-x t d"   . treemacs-select-directory)
-  ;;       ("C-x t B"   . treemacs-bookmark)
-  ;;       ("C-x t C-t" . treemacs-find-file)
-  ;;       ("C-x t M-t" . treemacs-find-tag)))
-#+end_src
-
-** Tramp
-Faster than the default scp (for small files)
-
-#+begin_src emacs-lisp
-(setq tramp-default-method "ssh")
-#+end_src
-
-Improve tramp prompt recognition
-
-#+begin_src emacs-lisp
-;; (after! tramp
-;;   (setenv "SHELL" "/bin/bash")
-;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|
-;; \\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
-#+end_src
-
-Nested snippets
-
-#+begin_src emacs-lisp
-(setq yas-triggers-in-field t)
-#+end_src
-
-Smart parentheses
-
-#+begin_src emacs-lisp
-(sp-local-pair
- '(org-mode)
- "<<" ">>"
- :actions '(insert))
-#+end_src
-
-** Web
-Default to opening links in emacs webkit
-
-#+begin_src emacs-lisp
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-#+end_src
-
-** Windows
-*** TODO Moom
-Moom is a package for manipulating the size and location of the actual emacs window. This is particularly useful on my mac.
-
-Firstly, set the default margin
-
-#+begin_src emacs-lisp
-;; (setq moom-user-margin '(50 50 50 50)) ; {top, bottom, left, right}
-;; (moom-mode 1)
-#+end_src
-
-*** Within Emacs
-+ Make Doom emacs ask which buffer to see after splitting a window.
-+ Take new window space from all other windows (not just current).
-+ Window rotation is nice, and can be found under SPC w r and SPC w R.
-  - Layout rotation is also nice though. Let’s stash this under SPC w a.
-
-+ We could also do with adding the missing arrow-key variants of the window navigation/swapping commands.
-+ I also like to be able to preview buffers when I switch them.
-
-#+begin_src emacs-lisp
-(setq evil-vsplit-window-right t
-      evil-split-window-below t)
-
-(defadvice! prompt-for-buffer (&rest _)
-  :after '(evil-window-split evil-window-vsplit)
-  (consult-buffer))
-
-(setq window-combination-resize t)
-
-(map! :map evil-window-map
-      "SPC" #'rotate-layout
-      ;; Navigation
-      "<left>"     #'evil-window-left
-      "<down>"     #'evil-window-down
-      "<up>"       #'evil-window-up
-      "<right>"    #'evil-window-right
-      ;; Swapping windows
-      "C-<left>"       #'+evil/window-move-left
-      "C-<down>"       #'+evil/window-move-down
-      "C-<up>"         #'+evil/window-move-up
-      "C-<right>"      #'+evil/window-move-right)
-
-;; (map! :map switch-workspace-buffer)
-;; (map! :leader
-;;       (:prefix-map ("," . "Switch buffer")
-;;        :desc "Search project rg" "h" #'counsel-projectile-rg))
-
-(map! :leader
-      :desc "Switch buffer" "," #'counsel-switch-buffer
-      :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
-#+end_src
-
-* Appearance
-** Fonts
-Doom exposes five (optional) variables for controlling fonts in Doom. Here are the three important ones:
-+ `doom-font'
-+ `doom-variable-pitch-font'
-+ `doom-big-font' -- used for `doom-big-font-mode'
-  - use this for presentations or streaming. 
-
-They all accept either a font-spec, font string ("Input Mono-12"), or xlfd font string. You generally only need doom-font and doom-variable-pitch-font.
-
-#+begin_src emacs-lisp
-(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22)
-      doom-variable-pitch-font (font-spec :family "FiraCode Nerd Font"))
-
-;; (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-;;       doom-big-font (font-spec :family "Fira Code" :size 22)
-;;       doom-variable-pitch-font (font-spec :family "Fira Code"))
-#+end_src
-
-Use LaTeX as the default input method to type special characters
-
-#+begin_src emacs-lisp
-(set-input-method 'TeX)
-#+end_src
-
-Disable prettify symbols globally
-
-#+begin_src emacs-lisp
-(setq global-prettify-symbols-mode nil)
-#+end_src
-
-** Minimap
-Display the minimap (doesn't work well with org files \therefore disabled)
-
-#+begin_src emacs-lisp
-;; (setq minimap-mode 0)
-#+end_src
-
-** Modeline
-Adjust some settings
-
-#+begin_src emacs-lisp
-(display-time-mode 1) ; Show the time
-(size-indication-mode 1) ; Info about what's going on
-(setq display-time-default-load-average nil) ; Hide the load average
-(setq all-the-icons-scale-factor 1.2) ; prevent the end of the modeline from being cut off
-#+end_src
-
-Alter the colour of the filename in the buffer when modifications have been made to a file
-
-#+begin_src emacs-lisp
-(custom-set-faces!
-  '(doom-modeline-buffer-modified :foreground "orchid2"))
-#+end_src
-
-Conditionally hide the encoding
-
-#+begin_src emacs-lisp
-(defun doom-modeline-conditional-buffer-encoding ()
-  "We expect the encoding to be LF UTF-8, so only show the modeline when this is not the case"
-  (setq-local doom-modeline-buffer-encoding
-              (unless (and (memq (plist-get (coding-system-plist buffer-file-coding-system) :category)
-                                 '(coding-category-undecided coding-category-utf-8))
-                           (not (memq (coding-system-eol-type buffer-file-coding-system) '(1 2))))
-                t)))
-
-(add-hook 'after-change-major-mode-hook #'doom-modeline-conditional-buffer-encoding)
-#+end_src
-
-Alter the modeline for viewing PDFs
-
-#+begin_src emacs-lisp
-(after! doom-modeline
-  (doom-modeline-def-segment buffer-name
-    "Display the current buffer's name, without any other information."
-    (concat
-     (doom-modeline-spc)
-     (doom-modeline--buffer-name)))
-
-  (doom-modeline-def-segment pdf-icon
-    "PDF icon from all-the-icons."
-    (concat
-     (doom-modeline-spc)
-     (doom-modeline-icon 'octicon "file-pdf" nil nil
-                         :face (if (doom-modeline--active)
-                                   'all-the-icons-red
-                                 'mode-line-inactive)
-                         :v-adjust 0.02)))
-
-  (defun doom-modeline-update-pdf-pages ()
-    "Update PDF pages."
-    (setq doom-modeline--pdf-pages
-          (let ((current-page-str (number-to-string (eval `(pdf-view-current-page))))
-                (total-page-str (number-to-string (pdf-cache-number-of-pages))))
-            (concat
-             (propertize
-              (concat (make-string (- (length total-page-str) (length current-page-str)) ? )
-                      " P" current-page-str)
-              'face 'mode-line)
-             (propertize (concat "/" total-page-str) 'face 'doom-modeline-buffer-minor-mode)))))
-
-  (doom-modeline-def-segment pdf-pages
-    "Display PDF pages."
-    (if (doom-modeline--active) doom-modeline--pdf-pages
-      (propertize doom-modeline--pdf-pages 'face 'mode-line-inactive)))
-
-  (doom-modeline-def-modeline 'pdf
-    '(bar window-number pdf-pages pdf-icon buffer-name)
-    '(misc-info matches major-mode process vcs)))
-#+end_src
-
-** Splash Screen
-Not to toot my own trumpet, but I like this pretty cool splash screen that I made
-
-#+begin_src emacs-lisp
-(setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
-#+end_src
-
-** Theme
-There are two ways to load a theme. Both assume the theme is installed and available. You can either set `doom-theme' or manually load a theme with the `load-theme' function. The default is doom-one.
-
-I've found a few themes I like, so here we will load a random one on opening emacs
-
-Also add blur and opacity (blur doesn't work)
-
-#+begin_src emacs-lisp
-;; (use-package autothemer
-
-(defun random-choice (items)
-  (let* ((size (length items))
-         (index (random size)))
-    (nth index items)))
-
-(setq random-theme (random-choice '(doom-dracula doom-moonlight doom-palenight doom-horizon doom-one)))
-
-;; (setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
-
-(cond ((string= random-theme "catppuccin-1") (setq doom-theme 'catppuccin-macchiato))
-      ((string= random-theme "catppuccin-2") (setq doom-theme 'catppuccin-frappe))
-      (t (setq doom-theme random-theme)))
-
-;; (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
-;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
-
-(doom/set-frame-opacity 100)
-;; (doom/set-frame-opacity 95)
-;; (doom/set-frame-opacity 85)
-#+end_src
-
-* Languages
-** General
-*** Github Copilot
-Firstly unbind aya-create from C-TAB
-
-#+begin_src emacs-lisp
-(map! :nvi "C-TAB" nil)
-(map! :nvi "C-<tab>" nil)
-#+end_src
-
-Then define the keybindings to use for Github copilot
-
-#+begin_src emacs-lisp
-;; accept completion from copilot and fallback to company
-(use-package! copilot
-  :hook ((prog-mode . copilot-mode)
-         (sh-mode . copilot-mode))
-  :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
-         ("C-S-<tab>" . 'copilot-accept-completion-by-word)
-         :map copilot-completion-map
-         ("C-TAB" . 'copilot-accept-completion-by-line)
-         ("C-<tab>" . 'copilot-accept-completion-by-line)
-         ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion)))
-  ;; :config
-  ;; (when (string= (system-name) "apollo")
-  ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
-  ;; (when (string= (system-name) "maccie")
-  ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
-#+end_src
-
-*** Rainbow Delimiters
-Better syntax highlighting for code
-
-#+begin_src emacs-lisp
-(add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
-(add-hook! 'sh-mode-hook #'rainbow-delimiters-mode)
-#+end_src
-
-*** Visual Line Mode
-Enable word wrapping almost everywhere
-
-#+begin_src emacs-lisp
-(+global-word-wrap-mode +1)
-;; (add-hook! 'prog-mode-hook #'+word-wrap-mode)
-;; (add-hook! 'sh-mode-hook #'+word-wrap-mode)
-#+end_src
-
-** TODO Docker
-Setup lsp-docker
-
-#+begin_src emacs-lisp
-;; Uncomment the next line if you are using this from source
-;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
-
-;; (require 'lsp-docker)
-
-;; (defvar lsp-docker-client-packages
-;;     '(lsp-css lsp-clients lsp-bash lsp-go lsp-html lsp-typescript ; ruff-lsp
-;;       lsp-terraform lsp-clangd))
-
-;; (setq lsp-docker-client-configs
-;;     '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
-;;       (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
-;;       (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
-;;       ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
-;;       (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
-;;       (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")))
-;;       ;; (:server-id ruff-lsp :docker-server-id pyls-docker :server-command "pyls")))
-;;       ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
-
-;; (require 'lsp-docker)
-;; (lsp-docker-init-clients
-;;   :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
-;;   :client-packages lsp-docker-client-packages
-;;   :client-configs lsp-docker-client-configs)
-#+end_src
-
-** Magit
-Add keybindings to push to remote and view diffs.
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Magit pull" "g p" #'magit-pull
-      :desc "Magit push" "g P" #'magit-push
-      :desc "Magit diff" "g d" #'magit-diff
-      :desc "Magit stash" "g z" #'magit-stash
-      :desc "Magit stage all" "g a" #'magit-stage-modified
-      :desc "Magit unstage all" "g A" #'magit-unstage-all)
-#+end_src
-
-** Bash
-*** Default Scripting Shell
-Always use the bash shell for scripting
-
-#+begin_src emacs-lisp
-(after! sh-script
-  (sh-set-shell "bash"))
-  ;; (when (equal (string-match-p (regexp-quote "*PKGBUILD")
-  ;;                              (buffer-file-name))
-  ;;              "PKGBUILD")
-  ;;   (sh-set-shell "bash")))
-#+end_src
-
-*** Tab Spacing
-Set default tab width to 2:
-
-#+begin_src emacs-lisp
-(after! sh-script
-  (setq sh-basic-offset 2))
-#+end_src
-
-** Fortran
-*** General
-Set indentation for fortran and f90
-
-#+begin_src emacs-lisp
-(after! f90
-  (setq f90-do-indent 2)
-  (setq f90-if-indent 2)
-  (setq f90-type-indent 2)
-  (setq f90-program-indent 2)
-  (setq f90-continuation-indent 4)
-  (setq f90-smart-end 'blink))
-
-(after! fortran
-  (setq fortran-continuation-string "&")
-  (setq fortran-do-indent 2)
-  (setq fortran-if-indent 2)
-  (setq fortran-structure-indent 2))
-
-;; TODO: copy rc params file from apollo to mac
-(set-formatter! 'fprettify "fprettify"
-  :modes '(f90-mode))
-#+end_src
-
-Set Fortran and Fortran 90 mode for appropriate extensions
-
-#+begin_src emacs-lisp
-(setq auto-mode-alist
-      (cons '("\\.F90$" . f90-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.f90$" . f90-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.pf$" . f90-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.pf$" . f90-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.fpp$" . f90-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.F$" . fortran-mode) auto-mode-alist))
-(setq auto-mode-alist
-      (cons '("\\.f$" . fortran-mode) auto-mode-alist))
-#+end_src
-
-*** LSP
-
-#+begin_src emacs-lisp
-(use-package! lsp-mode
-  :hook (f90-mode . lsp-deferred))
-  ;; :commands lsp-deferred)
-#+end_src
-
-** Julia
-*** LSP
-Automatically start when opening a julia file
-
-#+begin_src emacs-lisp
-;; (use-package! eglot-jl
-;;   :defer  t)
-
-(use-package! julia-mode
-  :defer t
-  :init
-  (setenv "JULIA_NUM_THREADS" "6")
-  :interpreter ("julia" . julia-mode))
-
-  ;; :config
-  ;; (add-hook 'julia-mode-hook 'eglot-jl-init)
-  ;; (add-hook 'julia-mode-hook 'eglot-ensure))
-
-(add-hook! 'julia-mode-hook #'lsp-mode)
-#+end_src
-
-Julia-lsp doesn't work without this
-
-#+begin_src emacs-lisp
-(after! julia-mode
-  (add-hook 'julia-mode-hook #'rainbow-delimiters-mode-enable)
-  (add-hook! 'julia-mode-hook
-    (setq-local lsp-enable-folding t
-                lsp-folding-range-limit 100)))
-#+end_src
-
-Change directory for LanguageServer.jl and SymbolServer.jl
-
-#+begin_src emacs-lisp
-;; (use-package! lsp-julia
-;;   :config)
-;;   (setq lsp-julia-default-environment "~/.julia/environments/v1.8"))
-#+end_src
-
-** LaTeX
-See [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]], but might just keep using overleaf
-
-*** CDLaTeX
-Set new environments for:
-+ Non-numbered equations
-+ Non-numbered equations with bmatrix
-
-Then, set shortcuts for these environments
-
-Also make some additions/modifications to the maths symbol alist
-
-#+begin_src emacs-lisp
-(eval-after-load 'latex
-                 '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
-
-(after! tex-mode
-  (setq cdlatex-env-alist
-        '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
-          ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
-          ("bmatrix" "\\begin{equation*}\n    ?\n    \\begin{bmatrix}\n        \n    \\end{bmatrix}\n\\end{equation*}" nil)
-          ("vmatrix" "\\begin{equation*}\n    ?\n    \\begin{vmatrix}\n        \n    \\end{vmatrix}\n\\end{equation*}" nil)
-          ("pmatrix" "\\begin{equation*}\n    ?\n    \\begin{pmatrix}\n        \n    \\end{pmatrix}\n\\end{equation*}" nil)
-          ("split" "\\begin{equation} \\label{?}\n    \\begin{split}\n        \n    \\end{split}\n\\end{equation}" nil)
-          ("non-numbered split" "\\begin{equation*}\n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation*}" nil)))
-  (setq cdlatex-command-alist
-        '(("neq" "Insert non-numbered equation env" "" cdlatex-environment ("non-numbered equation") t nil)
-          ("equ" "Insert numbered equation env" "" cdlatex-environment ("equation") t nil) ; This might not work
-          ("bmat" "Insert bmatrix env" "" cdlatex-environment ("bmatrix") t nil)
-          ("vmat" "Insert vmatrix env" "" cdlatex-environment ("vmatrix") t nil)
-          ("pmat" "Insert pmatrix env" "" cdlatex-environment ("pmatrix") t nil)
-          ("spl" "Insert split env" "" cdlatex-environment ("split") t nil)
-          ("nspl" "Insert non-numbered split env" "" cdlatex-environment ("non-numbered split") t nil)))
-  (setq cdlatex-math-symbol-alist
-        '((?= ("\\equiv" "\\leftrightarrow" "\\longleftrightarrow"))
-          (?! ("\\neq"))
-          (?+ ("\\cup" "\\pm"))
-          (?^ ("\\uparrow" "\\downarrow"))
-          (?: ("\\cdots" "\\vdots" "\\ddots"))
-          (?b ("\\beta" "\\mathbb{?}"))
-          (?i ("\\in" "\\implies" "\\imath"))
-          (?I ("\\int" "\\Im"))
-          (?F ("\\Phi"))
-          (?P ("\\Pi" "\\propto"))
-          (?Q ("\\Theta" "\\quad" "\\qquad"))
-          (?S ("\\Sigma" "\\sum" "\\arcsin"))
-          (?t ("\\tau" "\\therefore" "\\tan"))
-          (?T ("\\times" "" "\\arctan"))
-          (?V ())
-          (?/ ("\\frac{?}{}" "\\not")) ;; Normal fr command doesn't work properly
-          (?< ("\\leq" "\\ll" "\\longleftarrow"))
-          (?> ("\\geq" "\\gg" "\\longrightarrow"))
-          (?$ ("\\leftarrow" "" ""))
-          (?% ("\\rightarrow" "" "")))))
-#+end_src
-
-*** Company Math
-Enable a company completion back-end for LaTeX maths symbols
-
-#+begin_src emacs-lisp
-(add-to-list 'company-backends 'company-math-symbols-unicode)
-#+end_src
-
-*** General
-
-#+begin_src emacs-lisp
-(after! tex-mode
-  (setq-default TeX-master nil))
-#+end_src
-
-*** LSP
-Set the lsp servers for use in latex mode
-
-#+begin_src emacs-lisp
-;; (use-package! lsp-ltex
-;;   :hook (text-mode . (lambda ()
-;;                        (require 'lsp-ltex)
-;;                        (lsp-deferred)))  ; or lsp
-;;   :init
-;;   (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
-
-(after! tex-mode
-  (add-to-list 'load-path "/opt/homebrew/bin/texlab")
-  (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab")
-  (with-eval-after-load "tex-mode"
-    (add-hook 'tex-mode-hook 'lsp)
-    (add-hook 'latex-mode-hook 'lsp))
-  (with-eval-after-load "bibtex"
-    (add-hook 'bibtex-mode-hook 'lsp)))
-#+end_src
-
-*** Preview Pane
-Enable LaTeX preview pane
-
-#+begin_src emacs-lisp
-(after! tex-mode
-  (require 'latex-preview-pane)
-  (latex-preview-pane-enable))
-#+end_src
-
-*** RefTeX
-Change the default method of adding/searching for citations with reftex
-
-#+begin_src emacs-lisp
-(map! :map reftex-mode-map
-      :localleader
-      :desc "reftex-cite" "r" #'reftex-citation
-      :desc "reftex-label" "l" #'reftex-label)
-#+end_src
-
-** LSP
-*** General
-Configure general settings for LSP
-
-#+begin_src emacs-lisp
-(after! lsp-mode
-  (setq lsp-enable-symbol-highlighting t
-        lsp-lens-enable t
-        lsp-headerline-breadcrumb-enable t
-        lsp-modeline-code-actions-enable t
-        lsp-modeline-diagnostics-enable t
-        lsp-diagnostics-provider :auto
-        lsp-eldoc-enable-hover t
-        lsp-completion-provider :auto
-        lsp-completion-show-detail t
-        lsp-completion-show-kind t
-        lsp-signature-mode t
-        lsp-signature-auto-activate t
-        lsp-signature-render-documentation t
-        lsp-idle-delay 1.0))
-#+end_src
 
 *** lsp-ui
 Configure lsp-ui settings
@@ -1080,7 +261,78 @@ Disable prettify-symbols in python modes
         :desc "blacken region" "r" #'python-black-region
         :desc "blacken statement" "s" #'python-black-statement))
 
-;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
+(setq-hook! 'python-mode-hook +format-with-lsp nil)
+#+end_src
+
+**** Ruff
+
+#+begin_src emacs-lisp
+;; (use-package! lsp-mode
+;;   :hook (python-mode . lsp-deferred)
+;;   ;; :commands lsp-deferred
+;;   :custom
+;;   (lsp-ruff-lsp-ruff-path ["usr/bin/ruff server"])
+;;   (lsp-ruff-lsp-ruff-args ["–-config /home/dylanmorgan/.config/ruff/ruff.toml" "--preview"])
+;;   ;; (lsp-ruff-lsp-python-path "python")
+;;   (lsp-ruff-lsp-advertize-fix-all t)
+;;   (lsp-ruff-lsp-advertize-organize-imports t)
+;;   (lsp-ruff-lsp-log-level "info")
+;;   (lsp-ruff-lsp-show-notifications "onError"))
+
+;; TODO when ruff formatting leaves alpha dev
+;; (after! python
+  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+  ;;                                               (eval (when buffer-file-name
+  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
+  ;;                                               "-"))
+  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff))
+  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
+  ;; (add-hook! 'before-save-hook #'lsp-organize-imports))
+#+end_src
+
+Also add ruff to flycheck
+
+#+begin_src emacs-lisp
+;; (after! flycheck
+;;   ;; (require 'flycheck)
+
+;;   (flycheck-define-checker python-ruff
+;;     "A Python syntax and style checker using the ruff utility.
+;;   To override the path to the ruff executable, set
+;;   `flycheck-python-ruff-executable'.
+;;   See URL `http://pypi.python.org/pypi/ruff'."
+
+;;     :command ("ruff format --config /home/dylanmorgan/.config/ruff/ruff.toml --target-version py312 -q"
+;;               (eval (when buffer-file-name
+;;                       (concat "--stdin-filename=" buffer-file-name)))
+;;               "-")
+;;     :standard-input t
+;;     :error-filter (lambda (errors)
+;;                     (let ((errors (flycheck-sanitize-errors errors)))
+;;                       (seq-map #'flycheck-flake8-fix-error-level errors)))
+;;     :error-patterns
+;;     ((warning line-start
+;;               (file-name) ":" line ":" (optional column ":") " "
+;;               (id (one-or-more (any alpha)) (one-or-more digit)) " "
+;;               (message (one-or-more not-newline))
+;;               line-end))
+;;     :modes python-mode)
+
+;;   (add-to-list 'flycheck-checkers 'python-ruff)
+;;   (provide 'flycheck-ruff))
+#+end_src
+
+Enable ruff over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "ruff-lsp")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'ruff-lsp))
 #+end_src
 
 **** Pyright
@@ -1112,77 +364,6 @@ Enable pyright over tramp
 ;;         :tramp-remote-path )
 #+end_src
 
-**** Ruff
-
-#+begin_src emacs-lisp
-(use-package! lsp-mode
-  :hook (python-mode . lsp-deferred)
-  ;; :commands lsp-deferred
-  :custom
-  (lsp-ruff-lsp-ruff-path ["ruff"])
-  (lsp-ruff-lsp-ruff-args ["–fix" "–show-source" "–show-fixes" "-w" "–target-version py39" "–preview" "–config ~/.config/ruff/ruff.toml" "–statistics"])
-  (lsp-ruff-lsp-python-path "python")
-  (lsp-ruff-lsp-advertize-fix-all t)
-  (lsp-ruff-lsp-advertize-organize-imports t)
-  (lsp-ruff-lsp-log-level "info")
-  (lsp-ruff-lsp-show-notifications "onError"))
-
-(after! python
-  ;; TODO when ruff formatting leaves alpha dev
-  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-  ;;                                               (eval (when buffer-file-name
-  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
-  ;;                                               "-"))
-  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff)) 
-  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
-  (add-hook! 'before-save-hook #'lsp-organize-imports))
-#+end_src
-
-Also add ruff to flycheck
-
-#+begin_src emacs-lisp
-(after! flycheck
-  ;; (require 'flycheck)
-
-  (flycheck-define-checker python-ruff
-    "A Python syntax and style checker using the ruff utility.
-To override the path to the ruff executable, set
-`flycheck-python-ruff-executable'.
-See URL `http://pypi.python.org/pypi/ruff'."
-
-    :command ("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-              (eval (when buffer-file-name
-                      (concat "--stdin-filename=" buffer-file-name)))
-              "-")
-    :standard-input t
-    :error-filter (lambda (errors)
-                    (let ((errors (flycheck-sanitize-errors errors)))
-                      (seq-map #'flycheck-flake8-fix-error-level errors)))
-    :error-patterns
-    ((warning line-start
-              (file-name) ":" line ":" (optional column ":") " "
-              (id (one-or-more (any alpha)) (one-or-more digit)) " "
-              (message (one-or-more not-newline))
-              line-end))
-    :modes python-mode)
-  
-  (add-to-list 'flycheck-checkers 'python-ruff)
-  (provide 'flycheck-ruff))
-#+end_src
-
-Enable ruff over tramp
-
-#+begin_src emacs-lisp
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection "ruff-lsp")
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'ruff-lsp))
-#+end_src
-
 *** TODO Jupyter
 Loading jupyter instead of emacs-jupyter
 
@@ -1201,6 +382,26 @@ Loading jupyter instead of emacs-jupyter
 ;;   (add-to-list 'org-structure-template-alist '("j" . "src jupyter-python")))
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
+
+(after! ein
+  (when (string= (system-name) "arch")
+    (setq ein:jupyter-default-server-command "/home/dylanmorgan/.local/bin/jupyter-lab"))
+  (when (string= (system-name) "maccie")
+    (setq ein:jupyter-default-server-command "/opt/homebrew/bin/jupyter-lab")))
+#+end_src
+
+*** numpydoc
+
+#+begin_src emacs-lisp
+(use-package! numpydoc
+  :after python
+  :ensure t
+  :config
+  (map! :map python-mode-map
+        :localleader
+        :desc "numpydoc" "n" #'numpydoc-generate)
+  ;; (setq numpydoc-template-long "")
+  (setq numpydoc-insertion-style 'yas))
 #+end_src
 
 *** Poetry
@@ -1219,7 +420,6 @@ Set keybindings for poetry and disable over tramp
         :localleader
         :desc "poetry" "p" #'poetry))
 #+end_src
-
 ** Rust 
 *** Formatters and Linters
 
@@ -1465,11 +665,13 @@ Enable cdlatex by default and edit an environment after inserting one.
 
 *** TODO In-line Fragments
 Use org-fragtog mode to automatically generate latex fragments
+For some reason this doesn't work on my mac, so I will only enable this for my home computer
 
 Change Latex fragment size
 
 #+begin_src emacs-lisp
-;; (add-hook 'org-mode-hook 'org-fragtog-mode)
+;; (when (string= (system-name) "arch")
+;;   (add-hook! 'org-mode-hook #'org-fragtog-mode))
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1646,6 +848,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 #+end_src
 
 ** Presentations
+*** Tree Slides
 It is possible to give presentations in org-mode using org-tree-slide
 
 #+begin_src emacs-lisp
@@ -1653,6 +856,98 @@ It is possible to give presentations in org-mode using org-tree-slide
   :after org
   :config
   (setq org-image-actual-width nil))
+#+end_src
+
+*** TODO Org Present
+For more advanced functionality, we can also make presentations using org-present
+
+#+begin_src emacs-lisp
+(defun my/org-present-prepare-slide (buffer-name heading)
+  (org-overview)  ; Show only top-level headlines
+  (org-show-entry)  ; Unfold the current entry
+  (org-show-children))  ; Show only direct subheadings of the slide but don't expand them
+
+(defun mu/org-present-start ()
+  ;; Tweak font sizes
+  (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                     (header-line (:height 4.0) variable-pitch)
+                                     (org-document-title (:height 1.75) org-document-title)
+                                     (org-code (:height 1.55) org-code)
+                                     (org-verbatim (:height 1.55) org-verbatim)
+                                     (org-block (:height 1.25) org-block)
+                                     (org-block-begin-line (:height 0.7) org-block)))
+
+  ;; Set a blank header line string to create blank space at the top
+  (setq header-line-format " ")
+
+  ;; Display inline images automatically
+  (org-display-inline-images)
+
+  ;; Center the presentation and wrap lines
+  (visual-fill-column-mode 1)
+  (visual-line-mode 1))
+
+(defun my/org-present-end ()
+  ;; Reset font customizations
+  (setq-local face-remapping-alist '((default variable-pitch default)))
+
+  ;; Clear the header line string so that it isn't displayed
+  (setq header-line-format nil)
+
+  ;; Stop displaying inline images
+  (org-remove-inline-images)
+
+  ;; Stop centering the document
+  (visual-fill-column-mode 0)
+  (visual-line-mode 0))
+
+(use-package! org-present
+  :hook
+  (org-mode-hook . variable-pitch-mode)
+  (org-present-mode-hook . my/org-present-start)
+  (org-present-mode-quit-hook . my/org-present-end)
+  (org-present-after-navigate-functions . my/org-present-prepare-slide)
+  :config
+  ;; Set reusable font name variables
+  (defvar my/fixed-width-font "FiraCode Nerd Font"
+    "The font to use for monospaced (fixed width) text.")
+  (defvar my/variable-width-font "Iosevka Aile"
+    "The font to use for variable-pitch (document) text.")
+
+  (set-face-attribute 'default nil :font my/fixed-width-font :weight 'light :height 180)
+  (set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'light :height 190)
+  (set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'light :height 1.3)
+
+  ;; Load org-faces to make sure we can set appropriate faces
+  (require 'org-faces)
+
+  ;; Resize Org headings
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font my/variable-width-font :weight 'medium :height (cdr face)))
+
+  ;; Make the document title a bit bigger
+  (set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.3)
+
+  ;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+  ;; Configure fill width
+  (setq visual-fill-column-width 110
+        visual-fill-column-center-text t))
 #+end_src
 
 ** Prettification
@@ -1677,6 +972,7 @@ Show LaTeX fragments when moving over them
         org-appear-autoentities t
         org-appear-autokeywords t))
 #+end_src
+
 
 *** Pretty Mode
 Make all the things look pretty
@@ -2000,26 +1296,15 @@ Automatically close the command buffer on exit
 #+end_src
 
 *** Fish Completions
-This package extends the pcomplete completion framework with completion from the fish shell.
-
-The fish shell has smart completion for a wide range of programs. fish does not require any special configuration to work with this package.
-
-Eshell, which uses pcomplete for completion, can be made to fall back on fish when it does not find any completion candidate with its native completion support.
-
-M-x shell can be made to use fish. This will disable the underlying shell
-completion.
+This package extends the pcomplete completion framework with completion from the fish shell. The fish shell has smart completion for a wide range of programs. fish does not require any special configuration to work with this package. Eshell, which uses pcomplete for completion, can be made to fall back on fish when it does not find any completion candidate with its native completion support. M-x shell can be made to use fish. This will disable the underlying shell completion.
 
 #+begin_src emacs-lisp
-(when (and (executable-find "fish")
-           (require 'fish-completion nil t))
-  (global-fish-completion-mode))
+;; (when (and (executable-find "fish")
+;;            (require 'fish-completion nil t))
+;;   (global-fish-completion-mode))
 #+end_src
 
-The condition will prevent the package from loading if fish is not found (change the executable name according to you local installation).
-
-Alternatively, you can simply load the package with (require 'fish-completion) and call fish-completion-mode manually.
-
-Optionally, if the package bash-completion is installed, fish-completion-complete can be configured to fall back on bash to further try completing.  See fish-completion-fallback-on-bash-p.
+The condition will prevent the package from loading if fish is not found (change the executable name according to you local installation. Alternatively, you can simply load the package with (require 'fish-completion) and call fish-completion-mode manually. Optionally, if the package bash-completion is installed, fish-completion-complete can be configured to fall back on bash to further try completing.  See fish-completion-fallback-on-bash-p.
 
 ** Prompt
 Fancier prompt:

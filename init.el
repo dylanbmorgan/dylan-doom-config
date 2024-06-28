@@ -56,7 +56,7 @@
        (popup
         +defaults
         +all)   ; tame sudden yet inevitable temporary windows
-       tabs            ; a tab bar for Emacs
+       ;; tabs            ; a tab bar for Emacs
        (treemacs          ; a project drawer, like neotree but cooler
         +lsp)
        unicode           ; extended unicode support for various languages
@@ -117,16 +117,16 @@
        editorconfig      ; let someone else argue about tabs vs spaces
        ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
-       gist              ; interacting with github gists
        (lookup              ; navigate your code and its documentation
         +dictionary
         +offline)
-       (lsp               ; M-x vscode
+       (lsp              ; M-x vscode
         +peek)
-       (magit             ; a git porcelain for Emacs
+       (magit            ; a git porcelain for Emacs
         +forge)
        make              ; run make tasks from Emacs
-       ;;pass              ; password manager for nerds
+       (pass             ; password manager for nerds
+        +auth)
        pdf               ; pdf enhancements
        prodigy           ; FIXME managing external services & code builders
        rgb               ; creating color strings
@@ -185,6 +185,7 @@
        (latex             ; writing papers in Emacs has never been so fun
         +tree-sitter
         +latexmk
+        +fold
         +lsp
         +cdlatex)
        ;;lean              ; for folks with too much to prove
@@ -206,13 +207,16 @@
         +pandoc
         +present
         +pretty
+        +fragtog
         +roam2)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
        (python            ; beautiful is better than ugly
         +tree-sitter
+        +cython
         +pyright
+        +pyenv
         +lsp)
        ;; +conda)
        ;;qt                ; the 'cutest' gui framework ever

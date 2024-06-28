@@ -1,4 +1,4 @@
-# Created 2024-01-07 Sun 23:24
+# Created 2024-06-28 Fri 16:00
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+export_file_name: ./README.org
@@ -10,10 +10,12 @@
 - [[#setup][Setup]]
   - [[#lexical-binding][Lexical Binding]]
   - [[#buffers][Buffers]]
+  - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
+  - [[#ellama][Ellama]]
   - [[#file-types][File types]]
   - [[#general][General]]
-  - [[#grammarly][Grammarly]]
+  - [[#gptel][gptel]]
   - [[#lines][Lines]]
   - [[#personal-information][Personal Information]]
   - [[#projectile][Projectile]]
@@ -117,6 +119,48 @@ I think this has to go at the top of the file (almost like a shebang)
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 #+end_src
+** ChatGPT
+For now the ChatGPT API is paid for so I cannot use these but I'll keep the configuration here
+*** ChatGPT-Shell
+Lazy load API key
+
+#+begin_src emacs-lisp
+(setq chatgpt-shell-openai-key
+      (lambda ()
+        (auth-source-pick-first-password :host "api.openai.com")))
+#+end_src
+*** Org-AI
+Add a querying keybind for the chatgpt package I'm using
+
+#+begin_src emacs-lisp
+(use-package! org-ai
+  :ensure t
+  :commands
+  (org-ai-mode
+   org-ai-global-mode)
+  :init
+  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
+  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+  :config
+  (setq org-ai-default-chat-model "gpt-4o") ; if you are on the gpt-4 beta:
+  (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
+
+  ;; Use the default bindings but change the leader
+  ;; (map! :leader
+  ;;       :prefix ("a" . "ai")
+  ;;       :desc "Start on project" "p" #'org-ai-on-project
+  ;;       :desc "Open prompt" "P" #'org-ai-prompt-in-new-buffer
+  ;;       :desc "AI on region" "r" #'org-ai-on-region
+  ;;       :desc "Refactor code" "c" #'org-ai-refactor-code
+  ;;       :desc "Summarise marked text" "s" #'org-ai-summarize
+  ;;       :desc "Switch chat model" "m" #'org-ai-switch-chat-model
+  ;;       :desc "URL request buffer" "!" #'org-ai-open-request-buffer
+  ;;       :desc "Account usage" "$" #'org-ai-open-account-usage-page
+  ;;       :desc "Speech input" "t" #'org-ai-talk-input-toggle
+  ;;       :desc "Speech output" "T" #'org-ai-talk-output-toggle
+  ;;       :desc "Read region" "R" #'org-ai-talk-read-region
+  ;;       :desc "Mark prompt at point" "SPC" #'org-ai-mark-region-at-point))
+#+end_src
 ** Delays
 I like to have custom delays for company mode, the leader key, and the spell checker:
 
@@ -128,6 +172,14 @@ I like to have custom delays for company mode, the leader key, and the spell che
 
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
+#+end_src
+** Ellama
+
+#+begin_src emacs-lisp
+(use-package! ellama
+  :defer t
+  :init
+  (setopt ellama-keymap-prefix "C-c e"))
 #+end_src
 ** File types
 *** Ebooks
@@ -171,7 +223,10 @@ Integrate books into emacs
 
 (global-subword-mode t)
 
-(map! [?\C-s] #'swiper)
+(map! "C-s" #'swiper)
+(map! "C-M-s" #'swiper-thing-at-point)
+(map! "C-S-s" #'isearch-forward-regexp)
+(map! "C-S-r" #'isearch-backward-regexp)
 
 ;; TODO
 ;; (map! which-key-mode-map
@@ -183,18 +238,21 @@ Integrate books into emacs
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
 #+end_src
-** TODO Grammarly
-My writing can be pretty bad at times, so I need some help
+** gptel
 
 #+begin_src emacs-lisp
-(use-package! lsp-grammarly
-  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-                                               (require 'lsp-grammarly)
-                                               (lsp-deferred)))  ; or lsp
-  :custom
-  (lsp-grammarly-dialect "british")
-  (lsp-grammarly-domain "academic")
-  (lsp-grammarly-suggestions-oxford-comma t))
+(use-package! gptel
+  :defer t
+  :config
+  ;;  (setq! gptel-api-key "your key"))
+  (setq gptel-model "zephyr:latest"
+        gptel-backend (gptel-make-ollama "Ollama"
+                        :host "localhost:11434"
+                        :stream t
+                        :models '("zephyr:latest"))))
+
+(add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
+(add-hook 'gptel-post-response-functions 'gptel-end-oF-response) ; TODO Bind key to end of response
 #+end_src
 ** Lines
 This determines the style of line numbers in effect. If set to `nil', line numbers are disabled. For relative line numbers, set this to `relative'.
@@ -234,7 +292,7 @@ opened first and enable project caching
 
 (map! :leader
       (:prefix-map ("p" . "project")
-       :desc "Search project a" "H" #'counsel-projectile-ag))
+       :desc "Search project ag" "H" #'counsel-projectile-ag))
 #+end_src
 ** Treemacs
 To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
@@ -299,7 +357,7 @@ General settings
   ;;       ("C-x t M-t" . treemacs-find-tag)))
 #+end_src
 ** Tramp
-Faster than the default scp (for small files)
+Faster t        han the default scp (for small files)
 
 #+begin_src emacs-lisp
 (setq tramp-default-method "ssh")
@@ -545,6 +603,7 @@ Then define the keybindings to use for Github copilot
 #+begin_src emacs-lisp
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
+  :defer t
   :hook ((prog-mode . copilot-mode)
          (sh-mode . copilot-mode))
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
@@ -655,8 +714,10 @@ Set indentation for fortran and f90
   (setq fortran-structure-indent 2))
 
 ;; TODO: copy rc params file from apollo to mac
-(set-formatter! 'fprettify "fprettify"
-  :modes '(f90-mode))
+;; (set-formatter! 'fprettify "fprettify -i 2 -l 88 -w 4 --whitespace-comma=true --whitespace-assignment=true --whitespace-decl=true --whitespace-relational=true --whitespace-plusminus=true --whitespace-multdiv=true --whitespace-print=true --whitespace-type=true --whitespace-intrinsics=true --strict-indent --enable-decl --enable-replacements --c-relations --case 1 1 1 1 --strip-comments --disable-fypp"
+(after! format
+  (set-formatter! 'fprettify "fprettify -i 2"
+    :modes '(f90-mode)))
 #+end_src
 
 Set Fortran and Fortran 90 mode for appropriate extensions
@@ -681,6 +742,7 @@ Set Fortran and Fortran 90 mode for appropriate extensions
 
 #+begin_src emacs-lisp
 (use-package! lsp-mode
+  :defer t
   :hook (f90-mode . lsp-deferred))
   ;; :commands lsp-deferred)
 #+end_src
@@ -782,6 +844,12 @@ Enable a company completion back-end for LaTeX maths symbols
 #+begin_src emacs-lisp
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 #+end_src
+*** Compilation
+Use LuaLaTeX with LaTeXMK
+
+#+begin_src emacs-lisp
+(setq TeX-command-extra-options "-lualatex -pdflua")
+#+end_src
 *** General
 
 #+begin_src emacs-lisp
@@ -792,16 +860,28 @@ Enable a company completion back-end for LaTeX maths symbols
 Set the lsp servers for use in latex mode
 
 #+begin_src emacs-lisp
-;; (use-package! lsp-ltex
-;;   :hook (text-mode . (lambda ()
-;;                        (require 'lsp-ltex)
-;;                        (lsp-deferred)))  ; or lsp
-;;   :init
-;;   (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
+(use-package! lsp-ltex
+  :defer t
+  :init
+  (setq lsp-ltex-version (gethash "ltex-ls" (json-parse-string (shell-command-to-string "ltex-ls -V")))
+        lsp-ltex-server-store-path nil
+        lsp-ltex-language "en-GB"
+        lsp-ltex-mother-tongue "en-GB"
+        lsp-ltex-completion-enabled t)
+  :config
+  (set-lsp-priority! 'ltex-ls 2))
 
 (after! tex-mode
-  (add-to-list 'load-path "/opt/homebrew/bin/texlab")
-  (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab")
+  ;; When on mac
+  (when (string= (system-name) "maccie")
+    (add-to-list 'load-path "/opt/homebrew/bin/texlab")
+    (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab"))
+
+  ;; When on arch
+  (when (string= (system-name) "arch")
+    (add-to-list 'load-path "/usr/bin/texlab")
+    (setq lsp-latex-texlab-executable "/usr/bin/texlab"))
+
   (with-eval-after-load "tex-mode"
     (add-hook 'tex-mode-hook 'lsp)
     (add-hook 'latex-mode-hook 'lsp))
@@ -824,6 +904,14 @@ Change the default method of adding/searching for citations with reftex
       :localleader
       :desc "reftex-cite" "r" #'reftex-citation
       :desc "reftex-label" "l" #'reftex-label)
+#+end_src
+*** Zotero
+Use the zotra-server backend
+
+#+begin_src emacs-lisp
+(after! tex-mode
+  (setq zotra-backend 'zotra-server)
+  (setq zotra-local-server-directory "~/Applications/zotra-server/"))
 #+end_src
 ** LSP
 *** General
@@ -1031,7 +1119,77 @@ Disable prettify-symbols in python modes
         :desc "blacken region" "r" #'python-black-region
         :desc "blacken statement" "s" #'python-black-statement))
 
-;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
+(setq-hook! 'python-mode-hook +format-with-lsp nil)
+#+end_src
+**** Ruff
+
+#+begin_src emacs-lisp
+;; (use-package! lsp-mode
+;;   :hook (python-mode . lsp-deferred)
+;;   ;; :commands lsp-deferred
+;;   :custom
+;;   (lsp-ruff-lsp-ruff-path ["usr/bin/ruff server"])
+;;   (lsp-ruff-lsp-ruff-args ["–-config /home/dylanmorgan/.config/ruff/ruff.toml" "--preview"])
+;;   ;; (lsp-ruff-lsp-python-path "python")
+;;   (lsp-ruff-lsp-advertize-fix-all t)
+;;   (lsp-ruff-lsp-advertize-organize-imports t)
+;;   (lsp-ruff-lsp-log-level "info")
+;;   (lsp-ruff-lsp-show-notifications "onError"))
+
+;; TODO when ruff formatting leaves alpha dev
+;; (after! python
+  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+  ;;                                               (eval (when buffer-file-name
+  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
+  ;;                                               "-"))
+  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff))
+  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
+  ;; (add-hook! 'before-save-hook #'lsp-organize-imports))
+#+end_src
+
+Also add ruff to flycheck
+
+#+begin_src emacs-lisp
+;; (after! flycheck
+;;   ;; (require 'flycheck)
+
+;;   (flycheck-define-checker python-ruff
+;;     "A Python syntax and style checker using the ruff utility.
+;;   To override the path to the ruff executable, set
+;;   `flycheck-python-ruff-executable'.
+;;   See URL `http://pypi.python.org/pypi/ruff'."
+
+;;     :command ("ruff format --config /home/dylanmorgan/.config/ruff/ruff.toml --target-version py312 -q"
+;;               (eval (when buffer-file-name
+;;                       (concat "--stdin-filename=" buffer-file-name)))
+;;               "-")
+;;     :standard-input t
+;;     :error-filter (lambda (errors)
+;;                     (let ((errors (flycheck-sanitize-errors errors)))
+;;                       (seq-map #'flycheck-flake8-fix-error-level errors)))
+;;     :error-patterns
+;;     ((warning line-start
+;;               (file-name) ":" line ":" (optional column ":") " "
+;;               (id (one-or-more (any alpha)) (one-or-more digit)) " "
+;;               (message (one-or-more not-newline))
+;;               line-end))
+;;     :modes python-mode)
+
+;;   (add-to-list 'flycheck-checkers 'python-ruff)
+;;   (provide 'flycheck-ruff))
+#+end_src
+
+Enable ruff over tramp
+
+#+begin_src emacs-lisp
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "ruff-lsp")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'ruff-lsp))
 #+end_src
 **** Pyright
 
@@ -1061,76 +1219,6 @@ Enable pyright over tramp
 ;;         :server-id 'pyright)
 ;;         :tramp-remote-path )
 #+end_src
-**** Ruff
-
-#+begin_src emacs-lisp
-(use-package! lsp-mode
-  :hook (python-mode . lsp-deferred)
-  ;; :commands lsp-deferred
-  :custom
-  (lsp-ruff-lsp-ruff-path ["ruff"])
-  (lsp-ruff-lsp-ruff-args ["–fix" "–show-source" "–show-fixes" "-w" "–target-version py39" "–preview" "–config ~/.config/ruff/ruff.toml" "–statistics"])
-  (lsp-ruff-lsp-python-path "python")
-  (lsp-ruff-lsp-advertize-fix-all t)
-  (lsp-ruff-lsp-advertize-organize-imports t)
-  (lsp-ruff-lsp-log-level "info")
-  (lsp-ruff-lsp-show-notifications "onError"))
-
-(after! python
-  ;; TODO when ruff formatting leaves alpha dev
-  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-  ;;                                               (eval (when buffer-file-name
-  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
-  ;;                                               "-"))
-  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff)) 
-  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
-  (add-hook! 'before-save-hook #'lsp-organize-imports))
-#+end_src
-
-Also add ruff to flycheck
-
-#+begin_src emacs-lisp
-(after! flycheck
-  ;; (require 'flycheck)
-
-  (flycheck-define-checker python-ruff
-    "A Python syntax and style checker using the ruff utility.
-To override the path to the ruff executable, set
-`flycheck-python-ruff-executable'.
-See URL `http://pypi.python.org/pypi/ruff'."
-
-    :command ("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-              (eval (when buffer-file-name
-                      (concat "--stdin-filename=" buffer-file-name)))
-              "-")
-    :standard-input t
-    :error-filter (lambda (errors)
-                    (let ((errors (flycheck-sanitize-errors errors)))
-                      (seq-map #'flycheck-flake8-fix-error-level errors)))
-    :error-patterns
-    ((warning line-start
-              (file-name) ":" line ":" (optional column ":") " "
-              (id (one-or-more (any alpha)) (one-or-more digit)) " "
-              (message (one-or-more not-newline))
-              line-end))
-    :modes python-mode)
-  
-  (add-to-list 'flycheck-checkers 'python-ruff)
-  (provide 'flycheck-ruff))
-#+end_src
-
-Enable ruff over tramp
-
-#+begin_src emacs-lisp
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection "ruff-lsp")
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'ruff-lsp))
-#+end_src
 *** TODO Jupyter
 Loading jupyter instead of emacs-jupyter
 
@@ -1149,6 +1237,25 @@ Loading jupyter instead of emacs-jupyter
 ;;   (add-to-list 'org-structure-template-alist '("j" . "src jupyter-python")))
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
+
+(after! ein
+  (when (string= (system-name) "arch")
+    (setq ein:jupyter-default-server-command "/home/dylanmorgan/.local/bin/jupyter-lab"))
+  (when (string= (system-name) "maccie")
+    (setq ein:jupyter-default-server-command "/opt/homebrew/bin/jupyter-lab")))
+#+end_src
+*** numpydoc
+
+#+begin_src emacs-lisp
+(use-package! numpydoc
+  :after python
+  :ensure t
+  :config
+  (map! :map python-mode-map
+        :localleader
+        :desc "numpydoc" "n" #'numpydoc-generate)
+  ;; (setq numpydoc-template-long "")
+  (setq numpydoc-insertion-style 'yas))
 #+end_src
 *** Poetry
 Set keybindings for poetry and disable over tramp
@@ -1397,11 +1504,13 @@ Enable cdlatex by default and edit an environment after inserting one.
 #+end_src
 *** TODO In-line Fragments
 Use org-fragtog mode to automatically generate latex fragments
+For some reason this doesn't work on my mac, so I will only enable this for my home computer
 
 Change Latex fragment size
 
 #+begin_src emacs-lisp
-;; (add-hook 'org-mode-hook 'org-fragtog-mode)
+;; (when (string= (system-name) "arch")
+;;   (add-hook! 'org-mode-hook #'org-fragtog-mode))
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1574,6 +1683,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (put 'scimax-org-renumber-environment 'enabled t))
 #+end_src
 ** Presentations
+*** Tree Slides
 It is possible to give presentations in org-mode using org-tree-slide
 
 #+begin_src emacs-lisp
@@ -1581,6 +1691,97 @@ It is possible to give presentations in org-mode using org-tree-slide
   :after org
   :config
   (setq org-image-actual-width nil))
+#+end_src
+*** TODO Org Present
+For more advanced functionality, we can also make presentations using org-present
+
+#+begin_src emacs-lisp
+(defun my/org-present-prepare-slide (buffer-name heading)
+  (org-overview)  ; Show only top-level headlines
+  (org-show-entry)  ; Unfold the current entry
+  (org-show-children))  ; Show only direct subheadings of the slide but don't expand them
+
+(defun mu/org-present-start ()
+  ;; Tweak font sizes
+  (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                     (header-line (:height 4.0) variable-pitch)
+                                     (org-document-title (:height 1.75) org-document-title)
+                                     (org-code (:height 1.55) org-code)
+                                     (org-verbatim (:height 1.55) org-verbatim)
+                                     (org-block (:height 1.25) org-block)
+                                     (org-block-begin-line (:height 0.7) org-block)))
+
+  ;; Set a blank header line string to create blank space at the top
+  (setq header-line-format " ")
+
+  ;; Display inline images automatically
+  (org-display-inline-images)
+
+  ;; Center the presentation and wrap lines
+  (visual-fill-column-mode 1)
+  (visual-line-mode 1))
+
+(defun my/org-present-end ()
+  ;; Reset font customizations
+  (setq-local face-remapping-alist '((default variable-pitch default)))
+
+  ;; Clear the header line string so that it isn't displayed
+  (setq header-line-format nil)
+
+  ;; Stop displaying inline images
+  (org-remove-inline-images)
+
+  ;; Stop centering the document
+  (visual-fill-column-mode 0)
+  (visual-line-mode 0))
+
+(use-package! org-present
+  :hook
+  (org-mode-hook . variable-pitch-mode)
+  (org-present-mode-hook . my/org-present-start)
+  (org-present-mode-quit-hook . my/org-present-end)
+  (org-present-after-navigate-functions . my/org-present-prepare-slide)
+  :config
+  ;; Set reusable font name variables
+  (defvar my/fixed-width-font "FiraCode Nerd Font"
+    "The font to use for monospaced (fixed width) text.")
+  (defvar my/variable-width-font "Iosevka Aile"
+    "The font to use for variable-pitch (document) text.")
+
+  (set-face-attribute 'default nil :font my/fixed-width-font :weight 'light :height 180)
+  (set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'light :height 190)
+  (set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'light :height 1.3)
+
+  ;; Load org-faces to make sure we can set appropriate faces
+  (require 'org-faces)
+
+  ;; Resize Org headings
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font my/variable-width-font :weight 'medium :height (cdr face)))
+
+  ;; Make the document title a bit bigger
+  (set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.3)
+
+  ;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+  ;; Configure fill width
+  (setq visual-fill-column-width 110
+        visual-fill-column-center-text t))
 #+end_src
 ** Prettification
 *** Emphasis Markers
@@ -1917,26 +2118,15 @@ Automatically close the command buffer on exit
   (setq eshell-destroy-buffer-when-process-dies t))
 #+end_src
 *** Fish Completions
-This package extends the pcomplete completion framework with completion from the fish shell.
-
-The fish shell has smart completion for a wide range of programs. fish does not require any special configuration to work with this package.
-
-Eshell, which uses pcomplete for completion, can be made to fall back on fish when it does not find any completion candidate with its native completion support.
-
-M-x shell can be made to use fish. This will disable the underlying shell
-completion.
+This package extends the pcomplete completion framework with completion from the fish shell. The fish shell has smart completion for a wide range of programs. fish does not require any special configuration to work with this package. Eshell, which uses pcomplete for completion, can be made to fall back on fish when it does not find any completion candidate with its native completion support. M-x shell can be made to use fish. This will disable the underlying shell completion.
 
 #+begin_src emacs-lisp
-(when (and (executable-find "fish")
-           (require 'fish-completion nil t))
-  (global-fish-completion-mode))
+;; (when (and (executable-find "fish")
+;;            (require 'fish-completion nil t))
+;;   (global-fish-completion-mode))
 #+end_src
 
-The condition will prevent the package from loading if fish is not found (change the executable name according to you local installation).
-
-Alternatively, you can simply load the package with (require 'fish-completion) and call fish-completion-mode manually.
-
-Optionally, if the package bash-completion is installed, fish-completion-complete can be configured to fall back on bash to further try completing.  See fish-completion-fallback-on-bash-p.
+The condition will prevent the package from loading if fish is not found (change the executable name according to you local installation. Alternatively, you can simply load the package with (require 'fish-completion) and call fish-completion-mode manually. Optionally, if the package bash-completion is installed, fish-completion-complete can be configured to fall back on bash to further try completing.  See fish-completion-fallback-on-bash-p.
 ** Prompt
 Fancier prompt:
 

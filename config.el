@@ -18,6 +18,38 @@
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 
+(setq chatgpt-shell-openai-key
+      (lambda ()
+        (auth-source-pick-first-password :host "api.openai.com")))
+
+(use-package! org-ai
+  :ensure t
+  :commands
+  (org-ai-mode
+   org-ai-global-mode)
+  :init
+  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
+  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+  :config
+  (setq org-ai-default-chat-model "gpt-4o") ; if you are on the gpt-4 beta:
+  (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
+
+  ;; Use the default bindings but change the leader
+  ;; (map! :leader
+  ;;       :prefix ("a" . "ai")
+  ;;       :desc "Start on project" "p" #'org-ai-on-project
+  ;;       :desc "Open prompt" "P" #'org-ai-prompt-in-new-buffer
+  ;;       :desc "AI on region" "r" #'org-ai-on-region
+  ;;       :desc "Refactor code" "c" #'org-ai-refactor-code
+  ;;       :desc "Summarise marked text" "s" #'org-ai-summarize
+  ;;       :desc "Switch chat model" "m" #'org-ai-switch-chat-model
+  ;;       :desc "URL request buffer" "!" #'org-ai-open-request-buffer
+  ;;       :desc "Account usage" "$" #'org-ai-open-account-usage-page
+  ;;       :desc "Speech input" "t" #'org-ai-talk-input-toggle
+  ;;       :desc "Speech output" "T" #'org-ai-talk-output-toggle
+  ;;       :desc "Read region" "R" #'org-ai-talk-read-region
+  ;;       :desc "Mark prompt at point" "SPC" #'org-ai-mark-region-at-point))
+
 (setq which-key-idle-delay 0.2)
 
 (setq company-idle-delay 0.3
@@ -25,6 +57,11 @@
 
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
+
+(use-package! ellama
+  :defer t
+  :init
+  (setopt ellama-keymap-prefix "C-c e"))
 
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
@@ -45,7 +82,10 @@
 
 (global-subword-mode t)
 
-(map! [?\C-s] #'swiper)
+(map! "C-s" #'swiper)
+(map! "C-M-s" #'swiper-thing-at-point)
+(map! "C-S-s" #'isearch-forward-regexp)
+(map! "C-S-r" #'isearch-backward-regexp)
 
 ;; TODO
 ;; (map! which-key-mode-map
@@ -57,14 +97,18 @@
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
 
-(use-package! lsp-grammarly
-  :hook ((tex-mode gfm-mode markdown-mode) . (lambda ()
-                                               (require 'lsp-grammarly)
-                                               (lsp-deferred)))  ; or lsp
-  :custom
-  (lsp-grammarly-dialect "british")
-  (lsp-grammarly-domain "academic")
-  (lsp-grammarly-suggestions-oxford-comma t))
+(use-package! gptel
+  :defer t
+  :config
+  ;;  (setq! gptel-api-key "your key"))
+  (setq gptel-model "zephyr:latest"
+        gptel-backend (gptel-make-ollama "Ollama"
+                        :host "localhost:11434"
+                        :stream t
+                        :models '("zephyr:latest"))))
+
+(add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
+(add-hook 'gptel-post-response-functions 'gptel-end-oF-response) ; TODO Bind key to end of response
 
 (setq display-line-numbers-type 'relative)
 
@@ -88,7 +132,7 @@
 
 (map! :leader
       (:prefix-map ("p" . "project")
-       :desc "Search project a" "H" #'counsel-projectile-ag))
+       :desc "Search project ag" "H" #'counsel-projectile-ag))
 
 (lsp-treemacs-sync-mode 1)
 ;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
@@ -293,6 +337,7 @@
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
+  :defer t
   :hook ((prog-mode . copilot-mode)
          (sh-mode . copilot-mode))
   :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
@@ -373,8 +418,10 @@
   (setq fortran-structure-indent 2))
 
 ;; TODO: copy rc params file from apollo to mac
-(set-formatter! 'fprettify "fprettify"
-  :modes '(f90-mode))
+;; (set-formatter! 'fprettify "fprettify -i 2 -l 88 -w 4 --whitespace-comma=true --whitespace-assignment=true --whitespace-decl=true --whitespace-relational=true --whitespace-plusminus=true --whitespace-multdiv=true --whitespace-print=true --whitespace-type=true --whitespace-intrinsics=true --strict-indent --enable-decl --enable-replacements --c-relations --case 1 1 1 1 --strip-comments --disable-fypp"
+(after! format
+  (set-formatter! 'fprettify "fprettify -i 2"
+    :modes '(f90-mode)))
 
 (setq auto-mode-alist
       (cons '("\\.F90$" . f90-mode) auto-mode-alist))
@@ -392,6 +439,7 @@
       (cons '("\\.f$" . fortran-mode) auto-mode-alist))
 
 (use-package! lsp-mode
+  :defer t
   :hook (f90-mode . lsp-deferred))
   ;; :commands lsp-deferred)
 
@@ -464,19 +512,33 @@
 
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 
+(setq TeX-command-extra-options "-lualatex -pdflua")
+
 (after! tex-mode
   (setq-default TeX-master nil))
 
-;; (use-package! lsp-ltex
-;;   :hook (text-mode . (lambda ()
-;;                        (require 'lsp-ltex)
-;;                        (lsp-deferred)))  ; or lsp
-;;   :init
-;;   (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
+(use-package! lsp-ltex
+  :defer t
+  :init
+  (setq lsp-ltex-version (gethash "ltex-ls" (json-parse-string (shell-command-to-string "ltex-ls -V")))
+        lsp-ltex-server-store-path nil
+        lsp-ltex-language "en-GB"
+        lsp-ltex-mother-tongue "en-GB"
+        lsp-ltex-completion-enabled t)
+  :config
+  (set-lsp-priority! 'ltex-ls 2))
 
 (after! tex-mode
-  (add-to-list 'load-path "/opt/homebrew/bin/texlab")
-  (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab")
+  ;; When on mac
+  (when (string= (system-name) "maccie")
+    (add-to-list 'load-path "/opt/homebrew/bin/texlab")
+    (setq lsp-latex-texlab-executable "/opt/homebrew/bin/texlab"))
+
+  ;; When on arch
+  (when (string= (system-name) "arch")
+    (add-to-list 'load-path "/usr/bin/texlab")
+    (setq lsp-latex-texlab-executable "/usr/bin/texlab"))
+
   (with-eval-after-load "tex-mode"
     (add-hook 'tex-mode-hook 'lsp)
     (add-hook 'latex-mode-hook 'lsp))
@@ -491,6 +553,10 @@
       :localleader
       :desc "reftex-cite" "r" #'reftex-citation
       :desc "reftex-label" "l" #'reftex-label)
+
+(after! tex-mode
+  (setq zotra-backend 'zotra-server)
+  (setq zotra-local-server-directory "~/Applications/zotra-server/"))
 
 (after! lsp-mode
   (setq lsp-enable-symbol-highlighting t
@@ -657,7 +723,66 @@
         :desc "blacken region" "r" #'python-black-region
         :desc "blacken statement" "s" #'python-black-statement))
 
-;; (setq-hook! 'python-mode-hook +format-with-lsp nil)
+(setq-hook! 'python-mode-hook +format-with-lsp nil)
+
+;; (use-package! lsp-mode
+;;   :hook (python-mode . lsp-deferred)
+;;   ;; :commands lsp-deferred
+;;   :custom
+;;   (lsp-ruff-lsp-ruff-path ["usr/bin/ruff server"])
+;;   (lsp-ruff-lsp-ruff-args ["–-config /home/dylanmorgan/.config/ruff/ruff.toml" "--preview"])
+;;   ;; (lsp-ruff-lsp-python-path "python")
+;;   (lsp-ruff-lsp-advertize-fix-all t)
+;;   (lsp-ruff-lsp-advertize-organize-imports t)
+;;   (lsp-ruff-lsp-log-level "info")
+;;   (lsp-ruff-lsp-show-notifications "onError"))
+
+;; TODO when ruff formatting leaves alpha dev
+;; (after! python
+  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
+  ;;                                               (eval (when buffer-file-name
+  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
+  ;;                                               "-"))
+  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff))
+  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
+  ;; (add-hook! 'before-save-hook #'lsp-organize-imports))
+
+;; (after! flycheck
+;;   ;; (require 'flycheck)
+
+;;   (flycheck-define-checker python-ruff
+;;     "A Python syntax and style checker using the ruff utility.
+;;   To override the path to the ruff executable, set
+;;   `flycheck-python-ruff-executable'.
+;;   See URL `http://pypi.python.org/pypi/ruff'."
+
+;;     :command ("ruff format --config /home/dylanmorgan/.config/ruff/ruff.toml --target-version py312 -q"
+;;               (eval (when buffer-file-name
+;;                       (concat "--stdin-filename=" buffer-file-name)))
+;;               "-")
+;;     :standard-input t
+;;     :error-filter (lambda (errors)
+;;                     (let ((errors (flycheck-sanitize-errors errors)))
+;;                       (seq-map #'flycheck-flake8-fix-error-level errors)))
+;;     :error-patterns
+;;     ((warning line-start
+;;               (file-name) ":" line ":" (optional column ":") " "
+;;               (id (one-or-more (any alpha)) (one-or-more digit)) " "
+;;               (message (one-or-more not-newline))
+;;               line-end))
+;;     :modes python-mode)
+
+;;   (add-to-list 'flycheck-checkers 'python-ruff)
+;;   (provide 'flycheck-ruff))
+
+;; (lsp-register-client
+;;     (make-lsp-client
+;;         :new-connection (lsp-tramp-connection "ruff-lsp")
+;;         :activation-fn (lsp-activate-on "python")
+;;         :major-modes '(python-mode)
+;;         :remote? t
+;;         :add-on? t
+;;         :server-id 'ruff-lsp))
 
 (after! lsp-pyright
   (setq lsp-pyright-disable-language-services nil)
@@ -680,65 +805,6 @@
 ;;         :server-id 'pyright)
 ;;         :tramp-remote-path )
 
-(use-package! lsp-mode
-  :hook (python-mode . lsp-deferred)
-  ;; :commands lsp-deferred
-  :custom
-  (lsp-ruff-lsp-ruff-path ["ruff"])
-  (lsp-ruff-lsp-ruff-args ["–fix" "–show-source" "–show-fixes" "-w" "–target-version py39" "–preview" "–config ~/.config/ruff/ruff.toml" "–statistics"])
-  (lsp-ruff-lsp-python-path "python")
-  (lsp-ruff-lsp-advertize-fix-all t)
-  (lsp-ruff-lsp-advertize-organize-imports t)
-  (lsp-ruff-lsp-log-level "info")
-  (lsp-ruff-lsp-show-notifications "onError"))
-
-(after! python
-  ;; TODO when ruff formatting leaves alpha dev
-  ;; (setf (alist-get 'ruff apheleia-formatters) '("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-  ;;                                               (eval (when buffer-file-name
-  ;;                                                       (concat "--stdin-filename=" buffer-file-name)))
-  ;;                                               "-"))
-  ;; (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff)) 
-  ;; (add-hook! 'before-save-hook #'format-with-lsp t)
-  (add-hook! 'before-save-hook #'lsp-organize-imports))
-
-(after! flycheck
-  ;; (require 'flycheck)
-
-  (flycheck-define-checker python-ruff
-    "A Python syntax and style checker using the ruff utility.
-To override the path to the ruff executable, set
-`flycheck-python-ruff-executable'.
-See URL `http://pypi.python.org/pypi/ruff'."
-
-    :command ("ruff format --config ~/.config/ruff/ruff.toml --target-version py39 -q"
-              (eval (when buffer-file-name
-                      (concat "--stdin-filename=" buffer-file-name)))
-              "-")
-    :standard-input t
-    :error-filter (lambda (errors)
-                    (let ((errors (flycheck-sanitize-errors errors)))
-                      (seq-map #'flycheck-flake8-fix-error-level errors)))
-    :error-patterns
-    ((warning line-start
-              (file-name) ":" line ":" (optional column ":") " "
-              (id (one-or-more (any alpha)) (one-or-more digit)) " "
-              (message (one-or-more not-newline))
-              line-end))
-    :modes python-mode)
-  
-  (add-to-list 'flycheck-checkers 'python-ruff)
-  (provide 'flycheck-ruff))
-
-;; (lsp-register-client
-;;     (make-lsp-client
-;;         :new-connection (lsp-tramp-connection "ruff-lsp")
-;;         :activation-fn (lsp-activate-on "python")
-;;         :major-modes '(python-mode)
-;;         :remote? t
-;;         :add-on? t
-;;         :server-id 'ruff-lsp))
-
 ;; (use-package jupyter
 ;;   :after (ob-jupyter ob-python)
 ;;   :config
@@ -753,6 +819,22 @@ See URL `http://pypi.python.org/pypi/ruff'."
 ;;   (add-to-list 'org-structure-template-alist '("j" . "src jupyter-python")))
 
 ;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
+
+(after! ein
+  (when (string= (system-name) "arch")
+    (setq ein:jupyter-default-server-command "/home/dylanmorgan/.local/bin/jupyter-lab"))
+  (when (string= (system-name) "maccie")
+    (setq ein:jupyter-default-server-command "/opt/homebrew/bin/jupyter-lab")))
+
+(use-package! numpydoc
+  :after python
+  :ensure t
+  :config
+  (map! :map python-mode-map
+        :localleader
+        :desc "numpydoc" "n" #'numpydoc-generate)
+  ;; (setq numpydoc-template-long "")
+  (setq numpydoc-insertion-style 'yas))
 
 (use-package! poetry
   :after python
@@ -919,7 +1001,8 @@ See URL `http://pypi.python.org/pypi/ruff'."
     :after #'org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 
-;; (add-hook 'org-mode-hook 'org-fragtog-mode)
+;; (when (string= (system-name) "arch")
+;;   (add-hook! 'org-mode-hook #'org-fragtog-mode))
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1079,6 +1162,93 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   :after org
   :config
   (setq org-image-actual-width nil))
+
+(defun my/org-present-prepare-slide (buffer-name heading)
+  (org-overview)  ; Show only top-level headlines
+  (org-show-entry)  ; Unfold the current entry
+  (org-show-children))  ; Show only direct subheadings of the slide but don't expand them
+
+(defun mu/org-present-start ()
+  ;; Tweak font sizes
+  (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                     (header-line (:height 4.0) variable-pitch)
+                                     (org-document-title (:height 1.75) org-document-title)
+                                     (org-code (:height 1.55) org-code)
+                                     (org-verbatim (:height 1.55) org-verbatim)
+                                     (org-block (:height 1.25) org-block)
+                                     (org-block-begin-line (:height 0.7) org-block)))
+
+  ;; Set a blank header line string to create blank space at the top
+  (setq header-line-format " ")
+
+  ;; Display inline images automatically
+  (org-display-inline-images)
+
+  ;; Center the presentation and wrap lines
+  (visual-fill-column-mode 1)
+  (visual-line-mode 1))
+
+(defun my/org-present-end ()
+  ;; Reset font customizations
+  (setq-local face-remapping-alist '((default variable-pitch default)))
+
+  ;; Clear the header line string so that it isn't displayed
+  (setq header-line-format nil)
+
+  ;; Stop displaying inline images
+  (org-remove-inline-images)
+
+  ;; Stop centering the document
+  (visual-fill-column-mode 0)
+  (visual-line-mode 0))
+
+(use-package! org-present
+  :hook
+  (org-mode-hook . variable-pitch-mode)
+  (org-present-mode-hook . my/org-present-start)
+  (org-present-mode-quit-hook . my/org-present-end)
+  (org-present-after-navigate-functions . my/org-present-prepare-slide)
+  :config
+  ;; Set reusable font name variables
+  (defvar my/fixed-width-font "FiraCode Nerd Font"
+    "The font to use for monospaced (fixed width) text.")
+  (defvar my/variable-width-font "Iosevka Aile"
+    "The font to use for variable-pitch (document) text.")
+
+  (set-face-attribute 'default nil :font my/fixed-width-font :weight 'light :height 180)
+  (set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'light :height 190)
+  (set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'light :height 1.3)
+
+  ;; Load org-faces to make sure we can set appropriate faces
+  (require 'org-faces)
+
+  ;; Resize Org headings
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font my/variable-width-font :weight 'medium :height (cdr face)))
+
+  ;; Make the document title a bit bigger
+  (set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.3)
+
+  ;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+  ;; Configure fill width
+  (setq visual-fill-column-width 110
+        visual-fill-column-center-text t))
 
 (after! org
   (setq org-hide-emphasis-markers t))
@@ -1342,9 +1512,9 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 (after! eshell
   (setq eshell-destroy-buffer-when-process-dies t))
 
-(when (and (executable-find "fish")
-           (require 'fish-completion nil t))
-  (global-fish-completion-mode))
+;; (when (and (executable-find "fish")
+;;            (require 'fish-completion nil t))
+;;   (global-fish-completion-mode))
 
 ;; (defun with-face (str &rest face-plist)
 ;;    (propertize str 'face face-plist))
