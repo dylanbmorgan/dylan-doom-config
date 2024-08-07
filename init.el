@@ -4,8 +4,8 @@
 ;; in. Remember to run 'doom sync' after modifying it!
 
 ;; NOTE Press 'SPC h d h' (or 'C-h d h' for non-vim users) to access Doom's
-;;      documentation. There you'll find a "Module Index" link where you'll find
-;;      a comprehensive list of Doom's modules and what flags they support.
+;;      documentation. There you'll find a link to Doom's Module Index where all
+;;      of our modules are listed, including what flags they support.
 
 ;; NOTE Move your cursor over a module's name (or its flags) and press 'K' (or
 ;;      'C-c c k' for non-vim users) to view its documentation. This works on
@@ -23,6 +23,7 @@
        :completion
        (company           ; the ultimate code completion backend
         +childframe)
+       ;;(corfu +orderless)  ; complete with cap(f), cape and a flying feather!
        (ivy
         +fuzzy
         +icons
@@ -34,8 +35,8 @@
        ;;  +fuzzy
        ;;  +icons)              ; the *other* search engine for love and life
        ;; (vertico           ; the search engine of the future
-       ;; +icons
-       ;; +childframe)
+       ;;  +icons
+       ;;  +childframe)
 
        :ui
        deft              ; notational velocity for Emacs
@@ -45,7 +46,7 @@
        (emoji +unicode)  ; 🙂
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
        ;;hydra
-       indent-guides     ; highlighted indent columns
+       ;; indent-guides     ; highlighted indent columns
        (ligatures        ; ligatures and symbols to make your code pretty again
         +fira)
        minimap           ; show a map of the code on the side
@@ -56,7 +57,7 @@
        (popup
         +defaults
         +all)   ; tame sudden yet inevitable temporary windows
-       ;; tabs            ; a tab bar for Emacs
+       tabs            ; a tab bar for Emacs
        (treemacs          ; a project drawer, like neotree but cooler
         +lsp)
        unicode           ; extended unicode support for various languages
@@ -76,14 +77,14 @@
        ;;lispy             ; vim for lisp, for people who don't like vim
        multiple-cursors  ; editing in many places at once
        ;;objed             ; text object editing for the innocent
-       ;;parinfer          ; turn lisp into python, sort of
+       parinfer          ; turn lisp into python, sort of
        rotate-text       ; cycle region at point between text candidates
        snippets          ; my elves. They type so I don't have to
        word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
        (dired             ; making dired pretty [functional]
-        +ranger
+        +dirvish
         +icons)
        electric          ; smarter, keyword-based electric-indent
        (ibuffer         ; interactive buffer management
@@ -102,22 +103,23 @@
        (syntax              ; tasing you for every semicolon you forget
         +childframe)
        (spell            ; tasing you for misspelling mispelling
-        +aspell
+        +hunspell
         +everywhere)
        ;; grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
-       biblio
+       biblio             ; Writes a PhD for you (citation needed)
        (debugger          ; FIXME stepping through code, to help you add bugs
         +lsp)
-       ;;direnv
-       (docker
-        +lsp)
+       direnv
+       ;; (docker
+       ;;  +lsp)
        editorconfig      ; let someone else argue about tabs vs spaces
        ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        (lookup              ; navigate your code and its documentation
+        +docsets
         +dictionary
         +offline)
        (lsp              ; M-x vscode
@@ -128,13 +130,11 @@
        (pass             ; password manager for nerds
         +auth)
        pdf               ; pdf enhancements
-       prodigy           ; FIXME managing external services & code builders
-       rgb               ; creating color strings
-       taskrunner        ; taskrunner for all your projects
+       ;;prodigy           ; FIXME managing external services & code builders
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
        tree-sitter       ; text-based syntax highlighting
-       upload            ; map local to remote projects via ssh/ftp
+       ;; upload            ; map local to remote projects via ssh/ftp
 
        :os
        (:if IS-MAC macos)  ; improve compatibility with macOS
@@ -180,6 +180,7 @@
        ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
        (julia             ; a better, faster MATLAB
         +tree-sitter
+        +snail
         +lsp)
        ;;kotlin            ; a better, slicker Java(Script)
        (latex             ; writing papers in Emacs has never been so fun
@@ -203,11 +204,13 @@
         +brain
         +dragndrop
         +gnuplot
+        +journal
         +jupyter
+        +noter
         +pandoc
         +present
         +pretty
-        +fragtog
+        ;; +fragtog
         +roam2)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
@@ -254,8 +257,7 @@
        emms
        everywhere        ; *leave* Emacs!? You must be joking
        ;;irc               ; how neckbeards socialize
-       (rss +org)        ; emacs as an RSS reader
-       ;;twitter           ; twitter client https://twitter.com/vnought
+       ;; (rss +org)        ; emacs as an RSS reader
 
        :config
        literate

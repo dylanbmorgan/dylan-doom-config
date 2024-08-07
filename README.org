@@ -1,4 +1,4 @@
-# Created 2024-06-28 Fri 16:00
+# Created 2024-07-24 Wed 23:04
 #+title: Doom Emacs Literate Config
 #+author: Dylan Morgan
 #+export_file_name: ./README.org
@@ -7,27 +7,37 @@
 * Table of Contents :toc:
 - [[#introduction][Introduction]]
   - [[#installation-instructions][Installation Instructions]]
+  - [[#use-package-guide][Use-package guide]]
 - [[#setup][Setup]]
   - [[#lexical-binding][Lexical Binding]]
   - [[#buffers][Buffers]]
+  - [[#calculator][Calculator]]
   - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
+  - [[#deft][Deft]]
   - [[#ellama][Ellama]]
+  - [[#eval][Eval]]
+  - [[#evil][Evil]]
   - [[#file-types][File types]]
   - [[#general][General]]
   - [[#gptel][gptel]]
+  - [[#languagetool][Languagetool]]
   - [[#lines][Lines]]
   - [[#personal-information][Personal Information]]
   - [[#projectile][Projectile]]
+  - [[#spelling][Spelling]]
+  - [[#systemd][systemd]]
   - [[#treemacs][Treemacs]]
   - [[#tramp][Tramp]]
   - [[#web][Web]]
   - [[#windows][Windows]]
+  - [[#yasnippets][Yasnippets]]
 - [[#appearance][Appearance]]
   - [[#fonts][Fonts]]
   - [[#minimap][Minimap]]
   - [[#modeline][Modeline]]
   - [[#splash-screen][Splash Screen]]
+  - [[#tabs][Tabs]]
   - [[#theme][Theme]]
 - [[#languages][Languages]]
   - [[#general-1][General]]
@@ -45,6 +55,7 @@
   - [[#auto-tangle][Auto Tangle]]
   - [[#agenda][Agenda]]
   - [[#babel][Babel]]
+  - [[#buffers-1][Buffers]]
   - [[#capture][Capture]]
   - [[#exporting][Exporting]]
   - [[#file-conversions][File Conversions]]
@@ -68,26 +79,14 @@
   - [[#prompt][Prompt]]
 - [[#help][Help]]
 * Introduction
-GNU Emacs is an extendable and highly customizable text editor. It is based on an Emacs Lisp interpreter with extensions for text editing. Emacs has been extended in essentially all areas of computing, giving rise to a vast array of packages supporting, e.g., email, IRC and XMPP messaging, spreadsheets, remote server editing, and much more. Emacs includes extensive documentation on all aspects of the system, from basic editing to writing large Lisp programs. It has full Unicode support for nearly all human languages.
-
-Official documentation: https://www.gnu.org/software/emacs/#Manuals
-
-Doom Emacs Github repository: [[https://github.com/doomemacs/doomemacs]]
-
-This is the Doom Emacs configuration of Dylan Morgan
-- Github: https://github.com/dylanbmorgan
-- Email: dbmorgan98@gmail.com
-
-That being said, this is blatantly plagiarised from [[https://tecosaur.github.io/emacs-config/config.html#super-agenda][tecosaur's config]]
+GNU Emacs is an extendable and highly customisable text editor. It is based on an Emacs Lisp interpreter with extensions for text editing. Emacs has been extended in essentially all areas of computing, giving rise to a vast array of packages supporting, e.g., email, IRC and XMPP messaging, spreadsheets, remote server editing, and much more. Emacs includes extensive documentation on all aspects of the system, from basic editing to writing large Lisp programs. It has full Unicode support for nearly all human languages.
 ** Installation Instructions
-1. Follow the instructions to install Doom Emacs from [[https://github.com/doomemacs/doomemacs/blob/master/docs/index.org][here]]
-2. ~cd ~/.doom.d/~
-3. ~git clone https://github.com/dylanbmorgan/dylan-doom-config~
-4. Install the necessary programs when you inevitably get lots of errors!
-5. Waste lots of time learning how to use emacs, tweaking the configuration yourself, get frustrated, and ultimately return to using vim or VScode
+1. ~cd ~/.doom.d/~
+2. Install the necessary programs when you inevitably get lots of errors!
+3. Waste lots of time learning how to use emacs, tweaking the configuration yourself, get frustrated, and ultimately return to using vim or VScode
+** TODO Use-package guide
 * Setup
 ** Lexical Binding
-Make this file run (slightly) faster with lexical binding (see [[https://nullprogram.com/blog/2016/12/22/][this]] blog post for more info).
 
 I think this has to go at the top of the file (almost like a shebang)
 
@@ -119,6 +118,15 @@ I think this has to go at the top of the file (almost like a shebang)
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 #+end_src
+** Calculator
+Set a keybinding for the Emacs calculator
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("a" . "Calculator")
+       :desc "Calculator" "c" #'calc
+       :desc "Reset" "R" #'calc-reset))
+#+end_src
 ** ChatGPT
 For now the ChatGPT API is paid for so I cannot use these but I'll keep the configuration here
 *** ChatGPT-Shell
@@ -134,7 +142,6 @@ Add a querying keybind for the chatgpt package I'm using
 
 #+begin_src emacs-lisp
 (use-package! org-ai
-  :ensure t
   :commands
   (org-ai-mode
    org-ai-global-mode)
@@ -161,7 +168,7 @@ Add a querying keybind for the chatgpt package I'm using
   ;;       :desc "Read region" "R" #'org-ai-talk-read-region
   ;;       :desc "Mark prompt at point" "SPC" #'org-ai-mark-region-at-point))
 #+end_src
-** Delays
+** TODO Delays
 I like to have custom delays for company mode, the leader key, and the spell checker:
 
 #+begin_src emacs-lisp
@@ -173,6 +180,11 @@ I like to have custom delays for company mode, the leader key, and the spell che
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
 #+end_src
+** Deft
+
+#+begin_src emacs-lisp
+(setq deft-directory "~/Documents/deft/")
+#+end_src
 ** Ellama
 
 #+begin_src emacs-lisp
@@ -180,6 +192,21 @@ I like to have custom delays for company mode, the leader key, and the spell che
   :defer t
   :init
   (setopt ellama-keymap-prefix "C-c e"))
+#+end_src
+** Eval
+Enable inline evaluation of code, but use a nicer prefix
+
+#+begin_src emacs-lisp
+(setq eros-eval-result-prefix "⟹ ") ; default =>
+#+end_src
+** Evil
+When I want to make a substitution, I want it to be global more often than not — so let’s make that the default.
+
+#+begin_src emacs-lisp
+(after! evil
+  (setq evil-ex-substitute-global t     ; I like my s/../.. to by global by default
+        evil-move-cursor-back nil       ; Don't move the block cursor when toggling insert mode
+        evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
 #+end_src
 ** File types
 *** Ebooks
@@ -216,7 +243,7 @@ Integrate books into emacs
 (setq undo-limit 80000000
       evil-want-fine-undo t
       auto-save-default t
-      password-cache-expiry 30
+      password-cache-expiry 300
       scroll-preserve-screen-position 'always
       scroll-margin 4)
       ;; debug-on-error t)
@@ -232,8 +259,8 @@ Integrate books into emacs
 ;; (map! which-key-mode-map
 ;;       "DEL" #'which-key-undo)
 
-(after! highlight-indent-guides
-  (highlight-indent-guides-auto-set-faces))
+;; (after! highlight-indent-guides
+;;   (highlight-indent-guides-auto-set-faces))
 
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
@@ -242,7 +269,7 @@ Integrate books into emacs
 
 #+begin_src emacs-lisp
 (use-package! gptel
-  :defer t
+  :commands gptel gptel-menu gptel-mode gptel-send gptel-set-tpic
   :config
   ;;  (setq! gptel-api-key "your key"))
   (setq gptel-model "zephyr:latest"
@@ -254,6 +281,8 @@ Integrate books into emacs
 (add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
 (add-hook 'gptel-post-response-functions 'gptel-end-oF-response) ; TODO Bind key to end of response
 #+end_src
+** TODO Languagetool
+
 ** Lines
 This determines the style of line numbers in effect. If set to `nil', line numbers are disabled. For relative line numbers, set this to `relative'.
 
@@ -271,9 +300,14 @@ Automatically wrap text when it reaches the end of the screen
 Some functionality uses this to identify you, e.g. GPG configuration, email
 clients, file templates, and snippets.
 
+Set the GPG directories and increase the cache expiry
+
 #+begin_src emacs-lisp
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
+
+(setq auth-sources '("~/.authinfo.gpg" "authinfo")
+      auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
 #+end_src
 ** Projectile
 Change the default sort order so it lists the most recent files and directories
@@ -294,6 +328,81 @@ opened first and enable project caching
       (:prefix-map ("p" . "project")
        :desc "Search project ag" "H" #'counsel-projectile-ag))
 #+end_src
+** TODO Spelling
+
+My spelling is really bad so it needs checkling
+
+#+begin_src emacs-lisp
+(after! spell-fu
+  (setq ispell-personal-dictionary "~/.config/emacs/.local/etc/ispell/.pws")
+  (setq ispell-dictionary "en_GB"))
+
+(use-package! jinx
+  :defer t
+  :init
+  (add-hook 'doom-init-ui-hook #'global-jinx-mode)
+  :config
+  (setq jinx-languages "en_GB")
+  ;; Extra face(s) to ignore
+  (push 'org-inline-src-block
+        (alist-get 'org-mode jinx-exclude-faces)))
+;;   ;; Take over the relevant bindings.
+;;   (after! ispell
+;;     (global-set-key [remap ispell-word] #'jinx-correct))
+;;   (after! evil-commands
+;;     (global-set-key [remap evil-next-flyspell-error] #'jinx-next)
+;;     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
+#+end_src
+** systemd
+Use emacs as a client.
+
+Setup the systemd file here
+
+#+name emacsclient service
+#+begin_src systemd :tangle ~/.config/systemd/user/emacs.service :mkdirp yes
+[Unit]
+Description=Emacs server daemon
+Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
+Wants=gpg-agent.service
+
+[Service]
+Type=forking
+ExecStart=fish -c '/home/dylanmorgan/Applications/emacs-29.3/build/src/emacs --daemon && /home/dylanmorgan/Applications/emacs-29.3/build/lib-src/emacsclient -c --eval "(delete-frame)"'
+ExecStop=/home/dylanmorgan/Applications/emacs-29.3/build/lib-src/emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
+Environment=COLORTERM=truecolor
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+#+end_src
+
+which is then enabled by
+
+#+begin_src shell :tangle (if (string= "enabled\n" (shell-command-to-string "systemctl --user is-enabled emacs.service")) "no" "setup.sh")
+systemctl --user enable emacs.service
+#+end_src
+
+For some reason if a frame isn't opened early in the initialisation process, the daemon doesn't seem to like opening frames later --- hence the ~&& emacsclient~ part of the =ExecStart= value.
+
+It can now be nice to use this as a 'default app' for opening files. If we add an appropriate desktop entry, and enable it in the desktop environment.
+
+#+begin_src conf :tangle ~/.local/share/applications/emacs-client.desktop :mkdirp yes
+[Desktop Entry]
+Name=Emacs client
+GenericName=Text Editor
+Comment=A flexible platform for end-user applications
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/home/dylanmorgan/Applications/emacs-29.3/build/lib-src/emacsclient -create-frame --alternate-editor="" --no-wait %F
+Icon=emacs
+Type=Application
+Terminal=false
+Categories=TextEditor;Utility;
+StartupWMClass=Emacs
+Keywords=Text;Editor;
+X-KDE-StartupNotify=false
+#+end_src
+
+Lastly, while I'm not sure quite why it happens, but after a bit it seems that new Emacsclient frames start on the =*scratch*= buffer instead of the dashboard. I prefer the dashboard, so let's ensure that's always switched to in new frames.
 ** Treemacs
 To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
 
@@ -357,7 +466,7 @@ General settings
   ;;       ("C-x t M-t" . treemacs-find-tag)))
 #+end_src
 ** Tramp
-Faster t        han the default scp (for small files)
+Faster than the default scp (for small files)
 
 #+begin_src emacs-lisp
 (setq tramp-default-method "ssh")
@@ -366,25 +475,9 @@ Faster t        han the default scp (for small files)
 Improve tramp prompt recognition
 
 #+begin_src emacs-lisp
-;; (after! tramp
-;;   (setenv "SHELL" "/bin/bash")
-;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|
-;; \\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
-#+end_src
-
-Nested snippets
-
-#+begin_src emacs-lisp
-(setq yas-triggers-in-field t)
-#+end_src
-
-Smart parentheses
-
-#+begin_src emacs-lisp
-(sp-local-pair
- '(org-mode)
- "<<" ">>"
- :actions '(insert))
+(after! tramp
+  (setenv "SHELL" "/bin/bash")
+  (setq tramp-shell-prompt-pattern "\\(?:^\\|\n\\|\x0d\\)[^]#$%>\n]*#?[]#$%>] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
 #+end_src
 ** Web
 Default to opening links in emacs webkit
@@ -417,7 +510,7 @@ Firstly, set the default margin
 
 (defadvice! prompt-for-buffer (&rest _)
   :after '(evil-window-split evil-window-vsplit)
-  (consult-buffer))
+  (counsel-buffer-or-recentf))
 
 (setq window-combination-resize t)
 
@@ -443,6 +536,22 @@ Firstly, set the default margin
       :desc "Switch buffer" "," #'counsel-switch-buffer
       :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
 #+end_src
+** Yasnippets
+
+Enable nested snippets
+
+#+begin_src emacs-lisp
+(setq yas-triggers-in-field t)
+#+end_src
+
+Smart parentheses
+
+#+begin_src emacs-lisp
+(sp-local-pair
+ '(org-mode)
+ "<<" ">>"
+ :actions '(insert))
+#+end_src
 * Appearance
 ** Fonts
 Doom exposes five (optional) variables for controlling fonts in Doom. Here are the three important ones:
@@ -455,18 +564,16 @@ They all accept either a font-spec, font string ("Input Mono-12"), or xlfd font 
 
 #+begin_src emacs-lisp
 (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22)
-      doom-variable-pitch-font (font-spec :family "FiraCode Nerd Font"))
-
-;; (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-;;       doom-big-font (font-spec :family "Fira Code" :size 22)
-;;       doom-variable-pitch-font (font-spec :family "Fira Code"))
+      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22))
+      ;; doom-variable-pitch-font (font-spec :family "InputMonoNarrow Nerd Font" :size 18))
+      ;; doom-serif-font (font-spec :family "Droid*Sans*M*" :size 16 :weight 'light))
 #+end_src
 
 Use LaTeX as the default input method to type special characters
 
 #+begin_src emacs-lisp
-(set-input-method 'TeX)
+(after! text-mode
+  (set-input-method 'TeX))
 #+end_src
 
 Disable prettify symbols globally
@@ -552,11 +659,28 @@ Alter the modeline for viewing PDFs
     '(bar window-number pdf-pages pdf-icon buffer-name)
     '(misc-info matches major-mode process vcs)))
 #+end_src
-** Splash Screen
+** TODO Splash Screen
+- Change this to an SVG image
+
 Not to toot my own trumpet, but I like this pretty cool splash screen that I made
 
 #+begin_src emacs-lisp
 (setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
+#+end_src
+** Tabs
+
+#+begin_src emacs-lisp
+(after! centaur-tabs
+  (centaur-tabs-mode -1)
+  (setq centaur-tabs-set-icons t
+        ;; centaur-tabs-style "wave"
+        ;; centaur-tabs-set-modified-marker t
+        centaur-tabs-modified-marker "o"
+        centaur-tabs-close-button "×"
+        centaur-tabs-set-bar 'left
+        centaur-tabs-gray-out-icons 'buffer))
+  ;; (centaur-tabs-change-fonts "P22 Underground Book" 160))
+;; (setq x-underline-at-descent-line t)
 #+end_src
 ** Theme
 There are two ways to load a theme. Both assume the theme is installed and available. You can either set `doom-theme' or manually load a theme with the `load-theme' function. The default is doom-one.
@@ -573,7 +697,7 @@ Also add blur and opacity (blur doesn't work)
          (index (random size)))
     (nth index items)))
 
-(setq random-theme (random-choice '(doom-dracula doom-moonlight doom-palenight doom-horizon doom-one)))
+(setq random-theme (random-choice '(doom-dracula doom-palenight doom-one)))
 
 ;; (setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
 
@@ -606,18 +730,21 @@ Then define the keybindings to use for Github copilot
   :defer t
   :hook ((prog-mode . copilot-mode)
          (sh-mode . copilot-mode))
-  :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
-         ("C-S-<tab>" . 'copilot-accept-completion-by-word)
-         :map copilot-completion-map
-         ("C-TAB" . 'copilot-accept-completion-by-line)
-         ("C-<tab>" . 'copilot-accept-completion-by-line)
-         ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion)))
+  :bind (:map copilot-completion-map
+              ("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
+              ("C-S-<tab>" . 'copilot-accept-completion-by-word)
+              ("C-TAB" . 'copilot-accept-completion-by-line)
+              ("C-<tab>" . 'copilot-accept-completion-by-line)
+              ("C-M-TAB" . 'copilot-accept-completion)
+              ("C-M-<tab>" . 'copilot-accept-completion)))
   ;; :config
   ;; (when (string= (system-name) "apollo")
   ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
   ;; (when (string= (system-name) "maccie")
   ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+
+(map! :leader
+      :desc "Toggle Copilot" "c g" #'copilot-mode)
 #+end_src
 *** Rainbow Delimiters
 Better syntax highlighting for code
@@ -680,7 +807,7 @@ Add keybindings to push to remote and view diffs.
 Always use the bash shell for scripting
 
 #+begin_src emacs-lisp
-(after! sh-script
+(after! sh-mode
   (sh-set-shell "bash"))
   ;; (when (equal (string-match-p (regexp-quote "*PKGBUILD")
   ;;                              (buffer-file-name))
@@ -691,8 +818,9 @@ Always use the bash shell for scripting
 Set default tab width to 2:
 
 #+begin_src emacs-lisp
-(after! sh-script
-  (setq sh-basic-offset 2))
+(after! sh-mode
+  (setq sh-indentation
+        sh-basic-offset 2))
 #+end_src
 ** Fortran
 *** General
@@ -705,19 +833,18 @@ Set indentation for fortran and f90
   (setq f90-type-indent 2)
   (setq f90-program-indent 2)
   (setq f90-continuation-indent 4)
-  (setq f90-smart-end 'blink))
+  (setq f90-smart-end 'blink)
+
+  ;; TODO: copy rc params file from apollo to mac
+  (set-formatter! 'fprettify '("fprettify" "-i 2" "-l 88" "-w 4" "--whitespace-comma=true" "--whitespace-assignment=true" "--whitespace-decl=true" "--whitespace-relational=true" "--whitespace-plusminus=true" "--whitespace-multdiv=true" "--whitespace-print=true" "--whitespace-type=true" "--whitespace-intrinsics=true" "--strict-indent" "--enable-decl" "--enable-replacements" "--c-relations" "--case 1 1 1 1" "--strip-comments" "--disable-fypp") :modes '(f90-mode fortran-mode)))
 
 (after! fortran
   (setq fortran-continuation-string "&")
   (setq fortran-do-indent 2)
   (setq fortran-if-indent 2)
-  (setq fortran-structure-indent 2))
+  (setq fortran-structure-indent 2)
 
-;; TODO: copy rc params file from apollo to mac
-;; (set-formatter! 'fprettify "fprettify -i 2 -l 88 -w 4 --whitespace-comma=true --whitespace-assignment=true --whitespace-decl=true --whitespace-relational=true --whitespace-plusminus=true --whitespace-multdiv=true --whitespace-print=true --whitespace-type=true --whitespace-intrinsics=true --strict-indent --enable-decl --enable-replacements --c-relations --case 1 1 1 1 --strip-comments --disable-fypp"
-(after! format
-  (set-formatter! 'fprettify "fprettify -i 2"
-    :modes '(f90-mode)))
+  (set-formatter! 'fprettify '("fprettify" "-i 2" "-l 88" "-w 4" "--whitespace-comma=true" "--whitespace-assignment=true" "--whitespace-decl=true" "--whitespace-relational=true" "--whitespace-plusminus=true" "--whitespace-multdiv=true" "--whitespace-print=true" "--whitespace-type=true" "--whitespace-intrinsics=true" "--strict-indent" "--enable-decl" "--enable-replacements" "--c-relations" "--case 1 1 1 1" "--strip-comments" "--disable-fypp") :modes '(f90-mode fortran-mode)))
 #+end_src
 
 Set Fortran and Fortran 90 mode for appropriate extensions
@@ -742,9 +869,7 @@ Set Fortran and Fortran 90 mode for appropriate extensions
 
 #+begin_src emacs-lisp
 (use-package! lsp-mode
-  :defer t
   :hook (f90-mode . lsp-deferred))
-  ;; :commands lsp-deferred)
 #+end_src
 ** Julia
 *** LSP
@@ -785,7 +910,12 @@ Change directory for LanguageServer.jl and SymbolServer.jl
 ;;   (setq lsp-julia-default-environment "~/.julia/environments/v1.8"))
 #+end_src
 ** LaTeX
-See [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]], but might just keep using overleaf
+
+*** Biblio
+
+#+begin_src emacs-lisp
+(setq! bibtex-completion-bibliography '("~/Documents/warwick/thesus/references.bib"))
+#+end_src
 *** CDLaTeX
 Set new environments for:
 - Non-numbered equations
@@ -861,7 +991,10 @@ Set the lsp servers for use in latex mode
 
 #+begin_src emacs-lisp
 (use-package! lsp-ltex
-  :defer t
+  ;; :hook (text-mode . (lambda ()
+  ;;                      require 'lsp-ltex
+  ;;                      (lsp)))
+  :hook (latex-mode . lsp-deferred)
   :init
   (setq lsp-ltex-version (gethash "ltex-ls" (json-parse-string (shell-command-to-string "ltex-ls -V")))
         lsp-ltex-server-store-path nil
@@ -888,15 +1021,13 @@ Set the lsp servers for use in latex mode
   (with-eval-after-load "bibtex"
     (add-hook 'bibtex-mode-hook 'lsp)))
 #+end_src
-*** Preview Pane
-Enable LaTeX preview pane
+*** RefTeX
+Set the default bibliography location
 
 #+begin_src emacs-lisp
-(after! tex-mode
-  (require 'latex-preview-pane)
-  (latex-preview-pane-enable))
+(setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib")
 #+end_src
-*** RefTeX
+
 Change the default method of adding/searching for citations with reftex
 
 #+begin_src emacs-lisp
@@ -938,7 +1069,7 @@ Configure general settings for LSP
 Configure lsp-ui settings
 
 #+begin_src emacs-lisp
-(after! lsp-ui
+(after! lsp-mode
   (setq lsp-ui-sideline-enable t
         ;; lsp-ui-sideline-mode 1
         lsp-ui-sideline-delay 1
@@ -969,14 +1100,14 @@ Configure lsp-ui settings
   (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame)
   (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-sideline-execute-code-action))
 
-(map! :after lsp-mode
-      :map lsp-mode-map
-      :leader
-      :prefix ("#" . "custom")
-      :prefix ("# l" . "lsp")
-      :desc "open imenu"
-      "i" #'lsp-ui-imenu
-      "I" #'lsp-ui-imenu--refresh)
+;; (map! :after lsp-mode
+;;       :map lsp-mode-map
+;;       :leader
+;;       :prefix ("#" . "custom")
+;;       :prefix ("# l" . "lsp")
+;;       :desc "open imenu"
+;;       "i" #'lsp-ui-imenu
+;;       "I" #'lsp-ui-imenu--refresh)
 #+end_src
 *** TODO DAP
 Enable the DAP debugger
@@ -985,7 +1116,8 @@ Enable the DAP debugger
 (after! dap-mode
   (setq dap-python-debugger 'debugpy))
 
-(map! :map dap-mode-map
+(map! :after dap-mode
+      :map dap-mode-map
       :leader
       :prefix ("d" . "dap")
 
@@ -1042,8 +1174,11 @@ Automatically open live preview when opening a markdown file
 (after! markdown-mode
   ;; (add-hook! 'markdown-mode-hook #'grip-mode)
   (setq grip-sleep-time 2
-        grip-preview-use-webkit t
-        grip-binary-path "~/.local/bin/grip"))
+        grip-preview-use-webkit t)
+  (when (string= (system-name) "arch")
+    (setq grip-binary-path "/usr/bin/grip"))
+  (when (string= (system-name) "maccie")
+    (setq grip-binary-path "/opt/homebrew/bin/grip")))
 #+end_src
 *** Markdown Style Customisation
 Mirror the style that markdown renders in
@@ -1194,16 +1329,16 @@ Enable ruff over tramp
 **** Pyright
 
 #+begin_src emacs-lisp
-(after! lsp-pyright
-  (setq lsp-pyright-disable-language-services nil)
-  (setq lsp-pyright-disable-organize-imports t)
-  (setq lsp-pyright-auto-import-completions t)
-  (setq lsp-pyright-auto-search-paths t)
-  (setq lsp-pyright-diagnostic-mode "openFilesOnly")
-  (setq lsp-pyright-log-level "info")
-  (setq lsp-pyright-typechecking-mode "basic")
-  (setq lsp-pyright-use-library-code-for-types t)
-  (setq lsp-completion-enable t))
+(after! lsp-mode
+  (setq lsp-pyright-disable-language-services nil
+        lsp-pyright-disable-organize-imports nil
+        lsp-pyright-auto-import-completions t
+        lsp-pyright-auto-search-paths t
+        lsp-pyright-diagnostic-mode "openFilesOnly"
+        lsp-pyright-log-level "info"
+        lsp-pyright-typechecking-mode "basic"
+        lsp-pyright-use-library-code-for-types t
+        lsp-completion-enable t))
 #+end_src
 
 Enable pyright over tramp
@@ -1249,7 +1384,6 @@ Loading jupyter instead of emacs-jupyter
 #+begin_src emacs-lisp
 (use-package! numpydoc
   :after python
-  :ensure t
   :config
   (map! :map python-mode-map
         :localleader
@@ -1311,7 +1445,7 @@ Also set a keybinding for this
   (evil-force-normal-state))
 
 (map! :map org-mode-map
-      :after org
+      :after org-mode
       :localleader
       :prefix ("j" . "org header")
       :desc "auto tangle tag"
@@ -1321,12 +1455,30 @@ Also set a keybinding for this
 Set filepath for org agenda
 
 #+begin_src emacs-lisp
-(setq org-agenda-files '("~/Documents/org"))
+;; (setq org-agenda-files '("~/Documents/"))
 #+end_src
 *** TODO Super Agenda
-
-(see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
 ** TODO Babel
+** Buffers
+Make creating org buffers a little easier
+
+#+begin_src emacs-lisp
+(evil-define-command +evil-buffer-org-new (_count file)
+  "Creates a new ORG buffer replacing the current window, optionally editing a certain FILE"
+  :repeat nil
+  (interactive "P<f>")
+  (if file
+      (evil-edit file)
+    (let ((buffer (generate-new-buffer "*new org*")))
+      (set-window-buffer nil buffer)
+      (with-current-buffer buffer
+        (org-mode)
+        (setq-local doom-real-buffer-p t)))))
+
+(map! :leader
+      (:prefix "b"
+       :desc "New empty Org buffer" "o" #'+evil-buffer-org-new))
+#+end_src
 ** Capture
 Quickly take down notes
 
@@ -1343,7 +1495,6 @@ Quickly take down notes
          "* %?\n %U")))
 #+end_src
 ** TODO Exporting
-See [[https://tecosaur.github.io/emacs-config/config.html#exporting][tecosaur again]]
 
 I like to export markdown files written in org as README.org. I'm creating a shortcut to use for this in future.
 
@@ -1351,7 +1502,7 @@ I also export a lot of org files to markdown so I will also add another shortcut
 
 #+begin_src emacs-lisp
 (map! :map org-mode-map
-      :after org
+      :after org-mode
       :localleader
       :desc "org-export-to-org"
       "E" 'org-org-export-to-org
@@ -1364,7 +1515,7 @@ Leaving org is sad. Thankfully, there's a way around this!
 
 #+begin_src emacs-lisp
 (use-package! org-pandoc-import
-  :after org)
+  :after org-mode)
 #+end_src
 ** File Headers
 Provide different options for default headers for emacs org files
@@ -1412,7 +1563,7 @@ Provide different options for default headers for emacs org files
           "* Table of Contents :toc:\n\n"))
 
 (map! :map org-mode-map
-      :after org
+      :after org-mode
       :localleader
       :prefix ("j" . "org header")
       :desc "literate config"
@@ -1441,13 +1592,19 @@ Provide different options for default headers for emacs org files
       org-export-in-background t
       org-fold-catch-invisible-edits 'smart)
 #+end_src
+*** Special Block Extras
+
+#+begin_src emacs-lisp
+(use-package! org-special-block-extras
+  :hook (org-mode . org-special-block-extras-mode))
+#+end_src
 ** Headings
 Show all headings on opening an org file and assign numbers to those headings
 
 #+begin_src emacs-lisp
-(after! org
-  (setq org-startup-folded 'content)
-  (setq org-startup-numerated t))
+(after! org-mode
+  (setq org-startup-folded 'content
+        org-startup-numerated nil))
 #+end_src
 
 Set plain list indents such that the bullet point style signifies the indentation level
@@ -1467,7 +1624,7 @@ Set plain list indents such that the bullet point style signifies the indentatio
 Automatically display images when opening an org file
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (setq org-startup-with-inline-images t))
 #+end_src
 ** Keybindings
@@ -1494,7 +1651,7 @@ Change some of the org keybinding
 Enable cdlatex by default and edit an environment after inserting one.
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (setq org-startup-with-latex-preview t)
   (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
 
@@ -1509,8 +1666,7 @@ For some reason this doesn't work on my mac, so I will only enable this for my h
 Change Latex fragment size
 
 #+begin_src emacs-lisp
-;; (when (string= (system-name) "arch")
-;;   (add-hook! 'org-mode-hook #'org-fragtog-mode))
+(add-hook! 'org-mode-hook #'org-fragtog-mode)
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1518,17 +1674,25 @@ Change Latex fragment size
 ;;   (org-latex-preview '(16)))
 ;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-(after! org
+(after! org-mode
   '(org-format-latex-options
     (quote
      (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
       ("begin" "$1" "$" "$$" "\\(" "\\[")))))
 #+end_src
+*** Listing
+Use listing instead of verbatim src blocks
+
+#+begin_src emacs-lisp
+(after! org-mode
+  (add-to-list 'org-latex-packages-alist '("" "listings"))
+  (setq org-latex-listings 'listings))
+#+end_src
 *** Prettier Highlighting
 We want fragments to look lovely
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (setq org-highlight-latex-and-related '(native script entities))
   (require 'org-src)
   (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t))))
@@ -1573,7 +1737,7 @@ Make background colour transparent
 Lets try this stuff from Scimax
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (defun scimax-org-latex-fragment-justify (justification)
     "Justify the latex fragment at point with JUSTIFICATION.
 JUSTIFICATION is a symbol for 'left, 'center or 'right."
@@ -1683,14 +1847,12 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (put 'scimax-org-renumber-environment 'enabled t))
 #+end_src
 ** Presentations
-*** Tree Slides
-It is possible to give presentations in org-mode using org-tree-slide
+*** Beamer
+Use the Warwick theme by default
 
 #+begin_src emacs-lisp
-(use-package! org-tree-slide
-  :after org
-  :config
-  (setq org-image-actual-width nil))
+(after! org-beamer-mode
+  (setq org-beamer-theme "[progressbar=foot]Warwick"))
 #+end_src
 *** TODO Org Present
 For more advanced functionality, we can also make presentations using org-present
@@ -1783,6 +1945,23 @@ For more advanced functionality, we can also make presentations using org-presen
   (setq visual-fill-column-width 110
         visual-fill-column-center-text t))
 #+end_src
+*** Reveal.js
+
+#+begin_src emacs-lisp
+(setq org-re-reveal-theme "solarized"
+      org-re-reveal-revealjs-version "5.1"
+      org-re-reveal-slide-number "c/t"
+      org-re-reveal-mousewheel "t")
+#+end_src
+*** Tree Slides
+It is possible to give presentations in org-mode using org-tree-slide
+
+#+begin_src emacs-lisp
+(use-package! org-tree-slide
+  :after org-mode
+  :config
+  (setq org-image-actual-width nil))
+#+end_src
 ** Prettification
 *** Emphasis Markers
 We don't want to see underscores and asterisks when writing italic and bold
@@ -1792,24 +1971,11 @@ text.
 (after! org
   (setq org-hide-emphasis-markers t))
 #+end_src
-
-Show LaTeX fragments when moving over them
-
-#+begin_src emacs-lisp
-(use-package! org-appear
-  :after org
-  :hook (org-mode . org-appear-mode)
-  :config
-  (setq org-appear-autolinks t
-        org-appear-autosubmarkers t
-        org-appear-autoentities t
-        org-appear-autokeywords t))
-#+end_src
 *** Pretty Mode
 Make all the things look pretty
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (setq org-pretty-entities t)
   (setq +org-pretty-mode t))
 #+end_src
@@ -1821,10 +1987,9 @@ Live preview org files in github-flavoured markdown
   '(require 'ox-gfm nil t))
 #+end_src
 ** TODO Roam
-Need to do this (see [[https://tecosaur.github.io/emacs-config/config.html#transclusion][tecosaur's config]])
 
 #+begin_src emacs-lisp
-(after! org-roam
+(after! org-roam-mode
   (setq org-roam-directory "~/Documents/org/roam")
   (org-roam-db-autosync-mode))
 #+end_src
@@ -1836,7 +2001,7 @@ org-roam-ui
     :after org-roam)
 
 (use-package! org-roam-ui
-    :after org
+    :after org-mode
     ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
     ;; a hookable mode anymore, you're advised to pick something yourself
     ;; if you don't care about startup time, use
@@ -1851,7 +2016,7 @@ org-roam-ui
 Typing out src block headers all the time is a pain
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (defun +yas/org-src-header-p ()
     "Determine whether `point' is within a src-block header or header-args."
     (pcase (org-element-type (org-element-context))
@@ -1968,7 +2133,7 @@ Typing out src block headers all the time is a pain
 - Formatting for source code blocks
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (require 'ob-emacs-lisp)
   (require 'ob-fortran)
   (require 'ob-julia)
@@ -2045,7 +2210,7 @@ Generate a table of contents and set a shortcut
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(after! org
+(after! org-mode
   (defun add-toc ()
     (interactive)
     (insert "* Table of Contents :toc:\n\n"))
@@ -2061,7 +2226,7 @@ Generate a table of contents and set a shortcut
 Automatically log when a 'TODO' is marked as completed
 
 #+begin_src emacs-lisp
-(after! org
+(after! org-mode
   (setq org-log-done 'time)
   (setq org-closed-keep-when-no-todo 'non-nil))
 #+end_src
@@ -2088,7 +2253,6 @@ This is basically just like opening a fish shell in a buffer in emacs
 #+end_src
 ** eshell
 *** STRT General
-Taken from Derek Taylor's [[https://gitlab.com/dwt1/dotfiles/-/blob/master/.emacs.d.gnu/config.org#shells][Gitlab page]].
 
 Eshell is an emacs 'shell' written in elisp.
 

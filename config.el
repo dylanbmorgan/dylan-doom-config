@@ -18,12 +18,16 @@
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 
+(map! :leader
+      (:prefix ("a" . "Calculator")
+       :desc "Calculator" "c" #'calc
+       :desc "Reset" "R" #'calc-reset))
+
 (setq chatgpt-shell-openai-key
       (lambda ()
         (auth-source-pick-first-password :host "api.openai.com")))
 
 (use-package! org-ai
-  :ensure t
   :commands
   (org-ai-mode
    org-ai-global-mode)
@@ -58,10 +62,19 @@
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
 
+(setq deft-directory "~/Documents/deft/")
+
 (use-package! ellama
   :defer t
   :init
   (setopt ellama-keymap-prefix "C-c e"))
+
+(setq eros-eval-result-prefix "⟹ ") ; default =>
+
+(after! evil
+  (setq evil-ex-substitute-global t     ; I like my s/../.. to by global by default
+        evil-move-cursor-back nil       ; Don't move the block cursor when toggling insert mode
+        evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
 
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
@@ -75,7 +88,7 @@
 (setq undo-limit 80000000
       evil-want-fine-undo t
       auto-save-default t
-      password-cache-expiry 30
+      password-cache-expiry 300
       scroll-preserve-screen-position 'always
       scroll-margin 4)
       ;; debug-on-error t)
@@ -91,14 +104,14 @@
 ;; (map! which-key-mode-map
 ;;       "DEL" #'which-key-undo)
 
-(after! highlight-indent-guides
-  (highlight-indent-guides-auto-set-faces))
+;; (after! highlight-indent-guides
+;;   (highlight-indent-guides-auto-set-faces))
 
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
 
 (use-package! gptel
-  :defer t
+  :commands gptel gptel-menu gptel-mode gptel-send gptel-set-tpic
   :config
   ;;  (setq! gptel-api-key "your key"))
   (setq gptel-model "zephyr:latest"
@@ -120,6 +133,9 @@
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
 
+(setq auth-sources '("~/.authinfo.gpg" "authinfo")
+      auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
+
 (setq projectile-sort-order 'recentf
       projectile-auto-discover t)
 
@@ -133,6 +149,26 @@
 (map! :leader
       (:prefix-map ("p" . "project")
        :desc "Search project ag" "H" #'counsel-projectile-ag))
+
+(after! spell-fu
+  (setq ispell-personal-dictionary "~/.config/emacs/.local/etc/ispell/.pws")
+  (setq ispell-dictionary "en_GB"))
+
+(use-package! jinx
+  :defer t
+  :init
+  (add-hook 'doom-init-ui-hook #'global-jinx-mode)
+  :config
+  (setq jinx-languages "en_GB")
+  ;; Extra face(s) to ignore
+  (push 'org-inline-src-block
+        (alist-get 'org-mode jinx-exclude-faces)))
+;;   ;; Take over the relevant bindings.
+;;   (after! ispell
+;;     (global-set-key [remap ispell-word] #'jinx-correct))
+;;   (after! evil-commands
+;;     (global-set-key [remap evil-next-flyspell-error] #'jinx-next)
+;;     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
 
 (lsp-treemacs-sync-mode 1)
 ;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
@@ -190,17 +226,9 @@
 
 (setq tramp-default-method "ssh")
 
-;; (after! tramp
-;;   (setenv "SHELL" "/bin/bash")
-;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|
-;; \\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
-
-(setq yas-triggers-in-field t)
-
-(sp-local-pair
- '(org-mode)
- "<<" ">>"
- :actions '(insert))
+(after! tramp
+  (setenv "SHELL" "/bin/bash")
+  (setq tramp-shell-prompt-pattern "\\(?:^\\|\n\\|\x0d\\)[^]#$%>\n]*#?[]#$%>] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
 
 (setq browse-url-browser-function 'xwidget-webkit-browse-url)
 
@@ -212,7 +240,7 @@
 
 (defadvice! prompt-for-buffer (&rest _)
   :after '(evil-window-split evil-window-vsplit)
-  (consult-buffer))
+  (counsel-buffer-or-recentf))
 
 (setq window-combination-resize t)
 
@@ -238,15 +266,20 @@
       :desc "Switch buffer" "," #'counsel-switch-buffer
       :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
 
+(setq yas-triggers-in-field t)
+
+(sp-local-pair
+ '(org-mode)
+ "<<" ">>"
+ :actions '(insert))
+
 (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22)
-      doom-variable-pitch-font (font-spec :family "FiraCode Nerd Font"))
+      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22))
+      ;; doom-variable-pitch-font (font-spec :family "InputMonoNarrow Nerd Font" :size 18))
+      ;; doom-serif-font (font-spec :family "Droid*Sans*M*" :size 16 :weight 'light))
 
-;; (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-;;       doom-big-font (font-spec :family "Fira Code" :size 22)
-;;       doom-variable-pitch-font (font-spec :family "Fira Code"))
-
-(set-input-method 'TeX)
+(after! text-mode
+  (set-input-method 'TeX))
 
 (setq global-prettify-symbols-mode nil)
 
@@ -310,6 +343,18 @@
 
 (setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
 
+(after! centaur-tabs
+  (centaur-tabs-mode -1)
+  (setq centaur-tabs-set-icons t
+        ;; centaur-tabs-style "wave"
+        ;; centaur-tabs-set-modified-marker t
+        centaur-tabs-modified-marker "o"
+        centaur-tabs-close-button "×"
+        centaur-tabs-set-bar 'left
+        centaur-tabs-gray-out-icons 'buffer))
+  ;; (centaur-tabs-change-fonts "P22 Underground Book" 160))
+;; (setq x-underline-at-descent-line t)
+
 ;; (use-package autothemer
 
 (defun random-choice (items)
@@ -317,7 +362,7 @@
          (index (random size)))
     (nth index items)))
 
-(setq random-theme (random-choice '(doom-dracula doom-moonlight doom-palenight doom-horizon doom-one)))
+(setq random-theme (random-choice '(doom-dracula doom-palenight doom-one)))
 
 ;; (setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
 
@@ -340,18 +385,21 @@
   :defer t
   :hook ((prog-mode . copilot-mode)
          (sh-mode . copilot-mode))
-  :bind (("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
-         ("C-S-<tab>" . 'copilot-accept-completion-by-word)
-         :map copilot-completion-map
-         ("C-TAB" . 'copilot-accept-completion-by-line)
-         ("C-<tab>" . 'copilot-accept-completion-by-line)
-         ("C-M-TAB" . 'copilot-accept-completion)
-         ("C-M-<tab>" . 'copilot-accept-completion)))
+  :bind (:map copilot-completion-map
+              ("C-S-<iso-lefttab>" . 'copilot-accept-completion-by-word)
+              ("C-S-<tab>" . 'copilot-accept-completion-by-word)
+              ("C-TAB" . 'copilot-accept-completion-by-line)
+              ("C-<tab>" . 'copilot-accept-completion-by-line)
+              ("C-M-TAB" . 'copilot-accept-completion)
+              ("C-M-<tab>" . 'copilot-accept-completion)))
   ;; :config
   ;; (when (string= (system-name) "apollo")
   ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
   ;; (when (string= (system-name) "maccie")
   ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+
+(map! :leader
+      :desc "Toggle Copilot" "c g" #'copilot-mode)
 
 (add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
 (add-hook! 'sh-mode-hook #'rainbow-delimiters-mode)
@@ -393,15 +441,16 @@
       :desc "Magit stage all" "g a" #'magit-stage-modified
       :desc "Magit unstage all" "g A" #'magit-unstage-all)
 
-(after! sh-script
+(after! sh-mode
   (sh-set-shell "bash"))
   ;; (when (equal (string-match-p (regexp-quote "*PKGBUILD")
   ;;                              (buffer-file-name))
   ;;              "PKGBUILD")
   ;;   (sh-set-shell "bash")))
 
-(after! sh-script
-  (setq sh-basic-offset 2))
+(after! sh-mode
+  (setq sh-indentation
+        sh-basic-offset 2))
 
 (after! f90
   (setq f90-do-indent 2)
@@ -409,19 +458,18 @@
   (setq f90-type-indent 2)
   (setq f90-program-indent 2)
   (setq f90-continuation-indent 4)
-  (setq f90-smart-end 'blink))
+  (setq f90-smart-end 'blink)
+
+  ;; TODO: copy rc params file from apollo to mac
+  (set-formatter! 'fprettify '("fprettify" "-i 2" "-l 88" "-w 4" "--whitespace-comma=true" "--whitespace-assignment=true" "--whitespace-decl=true" "--whitespace-relational=true" "--whitespace-plusminus=true" "--whitespace-multdiv=true" "--whitespace-print=true" "--whitespace-type=true" "--whitespace-intrinsics=true" "--strict-indent" "--enable-decl" "--enable-replacements" "--c-relations" "--case 1 1 1 1" "--strip-comments" "--disable-fypp") :modes '(f90-mode fortran-mode)))
 
 (after! fortran
   (setq fortran-continuation-string "&")
   (setq fortran-do-indent 2)
   (setq fortran-if-indent 2)
-  (setq fortran-structure-indent 2))
+  (setq fortran-structure-indent 2)
 
-;; TODO: copy rc params file from apollo to mac
-;; (set-formatter! 'fprettify "fprettify -i 2 -l 88 -w 4 --whitespace-comma=true --whitespace-assignment=true --whitespace-decl=true --whitespace-relational=true --whitespace-plusminus=true --whitespace-multdiv=true --whitespace-print=true --whitespace-type=true --whitespace-intrinsics=true --strict-indent --enable-decl --enable-replacements --c-relations --case 1 1 1 1 --strip-comments --disable-fypp"
-(after! format
-  (set-formatter! 'fprettify "fprettify -i 2"
-    :modes '(f90-mode)))
+  (set-formatter! 'fprettify '("fprettify" "-i 2" "-l 88" "-w 4" "--whitespace-comma=true" "--whitespace-assignment=true" "--whitespace-decl=true" "--whitespace-relational=true" "--whitespace-plusminus=true" "--whitespace-multdiv=true" "--whitespace-print=true" "--whitespace-type=true" "--whitespace-intrinsics=true" "--strict-indent" "--enable-decl" "--enable-replacements" "--c-relations" "--case 1 1 1 1" "--strip-comments" "--disable-fypp") :modes '(f90-mode fortran-mode)))
 
 (setq auto-mode-alist
       (cons '("\\.F90$" . f90-mode) auto-mode-alist))
@@ -439,9 +487,7 @@
       (cons '("\\.f$" . fortran-mode) auto-mode-alist))
 
 (use-package! lsp-mode
-  :defer t
   :hook (f90-mode . lsp-deferred))
-  ;; :commands lsp-deferred)
 
 ;; (use-package! eglot-jl
 ;;   :defer  t)
@@ -450,23 +496,20 @@
   :defer t
   :init
   (setenv "JULIA_NUM_THREADS" "6")
-  :interpreter ("julia" . julia-mode))
+  :interpreter
+  ("julia" . julia-mode))
 
-  ;; :config
-  ;; (add-hook 'julia-mode-hook 'eglot-jl-init)
-  ;; (add-hook 'julia-mode-hook 'eglot-ensure))
+(use-package! lsp-julia
+  :init
+  (setq lsp-julia-package-dir nil
+        lsp-julia-flags `("-J~/.julia/compiled/v1.10/ite7n_ylCQA.so"))
+  (require 'lsp-julia)
+  :config
+  (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
 
 (add-hook! 'julia-mode-hook #'lsp-mode)
 
-(after! julia-mode
-  (add-hook 'julia-mode-hook #'rainbow-delimiters-mode-enable)
-  (add-hook! 'julia-mode-hook
-    (setq-local lsp-enable-folding t
-                lsp-folding-range-limit 100)))
-
-;; (use-package! lsp-julia
-;;   :config)
-;;   (setq lsp-julia-default-environment "~/.julia/environments/v1.8"))
+(setq! bibtex-completion-bibliography '("~/Documents/warwick/thesus/references.bib"))
 
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
@@ -517,16 +560,19 @@
 (after! tex-mode
   (setq-default TeX-master nil))
 
-(use-package! lsp-ltex
-  :defer t
-  :init
-  (setq lsp-ltex-version (gethash "ltex-ls" (json-parse-string (shell-command-to-string "ltex-ls -V")))
-        lsp-ltex-server-store-path nil
-        lsp-ltex-language "en-GB"
-        lsp-ltex-mother-tongue "en-GB"
-        lsp-ltex-completion-enabled t)
-  :config
-  (set-lsp-priority! 'ltex-ls 2))
+;; (use-package! lsp-ltex
+;;   ;; :hook (text-mode . (lambda ()
+;;   ;;                      require 'lsp-ltex
+;;   ;;                      (lsp)))
+;;   :hook (latex-mode . lsp-deferred)
+;;   :init
+;;   (setq lsp-ltex-version (gethash "ltex-ls" (json-parse-string (shell-command-to-string "ltex-ls -V")))
+;;         lsp-ltex-server-store-path nil
+;;         lsp-ltex-language "en-GB"
+;;         lsp-ltex-mother-tongue "en-GB"
+;;         lsp-ltex-completion-enabled t)
+;;   :config
+;;   (set-lsp-priority! 'ltex-ls 2))
 
 (after! tex-mode
   ;; When on mac
@@ -545,9 +591,7 @@
   (with-eval-after-load "bibtex"
     (add-hook 'bibtex-mode-hook 'lsp)))
 
-(after! tex-mode
-  (require 'latex-preview-pane)
-  (latex-preview-pane-enable))
+(setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib")
 
 (map! :map reftex-mode-map
       :localleader
@@ -574,7 +618,7 @@
         lsp-signature-render-documentation t
         lsp-idle-delay 1.0))
 
-(after! lsp-ui
+(after! lsp-mode
   (setq lsp-ui-sideline-enable t
         ;; lsp-ui-sideline-mode 1
         lsp-ui-sideline-delay 1
@@ -605,19 +649,20 @@
   (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame)
   (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-sideline-execute-code-action))
 
-(map! :after lsp-mode
-      :map lsp-mode-map
-      :leader
-      :prefix ("#" . "custom")
-      :prefix ("# l" . "lsp")
-      :desc "open imenu"
-      "i" #'lsp-ui-imenu
-      "I" #'lsp-ui-imenu--refresh)
+;; (map! :after lsp-mode
+;;       :map lsp-mode-map
+;;       :leader
+;;       :prefix ("#" . "custom")
+;;       :prefix ("# l" . "lsp")
+;;       :desc "open imenu"
+;;       "i" #'lsp-ui-imenu
+;;       "I" #'lsp-ui-imenu--refresh)
 
 (after! dap-mode
   (setq dap-python-debugger 'debugpy))
 
-(map! :map dap-mode-map
+(map! :after dap-mode
+      :map dap-mode-map
       :leader
       :prefix ("d" . "dap")
 
@@ -661,8 +706,11 @@
 (after! markdown-mode
   ;; (add-hook! 'markdown-mode-hook #'grip-mode)
   (setq grip-sleep-time 2
-        grip-preview-use-webkit t
-        grip-binary-path "~/.local/bin/grip"))
+        grip-preview-use-webkit t)
+  (when (string= (system-name) "arch")
+    (setq grip-binary-path "/usr/bin/grip"))
+  (when (string= (system-name) "maccie")
+    (setq grip-binary-path "/opt/homebrew/bin/grip")))
 
 (custom-set-faces!
   '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
@@ -709,8 +757,8 @@
 ;;         ;; Create a daily note
 ;;         :desc "daily note" #'obsidian-daily-note)
 
-(after! python
-  (prettify-symbols-mode -1))
+;; (after! python
+;;   (setq prettify-symbols-mode nil))
 
 (use-package! python-black
   :after python
@@ -784,16 +832,16 @@
 ;;         :add-on? t
 ;;         :server-id 'ruff-lsp))
 
-(after! lsp-pyright
-  (setq lsp-pyright-disable-language-services nil)
-  (setq lsp-pyright-disable-organize-imports t)
-  (setq lsp-pyright-auto-import-completions t)
-  (setq lsp-pyright-auto-search-paths t)
-  (setq lsp-pyright-diagnostic-mode "openFilesOnly")
-  (setq lsp-pyright-log-level "info")
-  (setq lsp-pyright-typechecking-mode "basic")
-  (setq lsp-pyright-use-library-code-for-types t)
-  (setq lsp-completion-enable t))
+(after! lsp-mode
+  (setq lsp-pyright-disable-language-services nil
+        lsp-pyright-disable-organize-imports nil
+        lsp-pyright-auto-import-completions t
+        lsp-pyright-auto-search-paths t
+        lsp-pyright-diagnostic-mode "openFilesOnly"
+        lsp-pyright-log-level "info"
+        lsp-pyright-typechecking-mode "basic"
+        lsp-pyright-use-library-code-for-types t
+        lsp-completion-enable t))
 
 ;; (lsp-register-client
 ;;     (make-lsp-client
@@ -805,30 +853,8 @@
 ;;         :server-id 'pyright)
 ;;         :tramp-remote-path )
 
-;; (use-package jupyter
-;;   :after (ob-jupyter ob-python)
-;;   :config
-;;   (setq jupyter-api-authentication-method 'password)
-;;   (setq jupyter-eval-use-overlays nil)
-;;   (setq org-babel-default-header-args:jupyter-python '((:session . "/jpy:localhost#8888:py")
-;;                                                        (:kernel . "conda-env-edge-py")
-;;                                                        (:async . "yes")
-;;                                                        (:pandoc t)))
-;;   (add-to-list 'savehist-additional-variables 'jupyter-server-kernel-names)
-;;   (setq ob-async-no-async-languages-alist '("jupyter-python"))
-;;   (add-to-list 'org-structure-template-alist '("j" . "src jupyter-python")))
-
-;; (advice-add 'request--netscape-cookie-parse :around #'fix-request-netscape-cookie-parse)
-
-(after! ein
-  (when (string= (system-name) "arch")
-    (setq ein:jupyter-default-server-command "/home/dylanmorgan/.local/bin/jupyter-lab"))
-  (when (string= (system-name) "maccie")
-    (setq ein:jupyter-default-server-command "/opt/homebrew/bin/jupyter-lab")))
-
 (use-package! numpydoc
   :after python
-  :ensure t
   :config
   (map! :map python-mode-map
         :localleader
@@ -878,7 +904,34 @@
       :desc "auto tangle tag"
       "a" 'insert-auto-tangle-tag)
 
-(setq org-agenda-files '("~/Documents/org"))
+;; (setq org-agenda-files '("~/Documents/"))
+
+(use-package! org-appear
+  :after org
+  :hook (org-mode . org-appear-mode)
+  :config
+  (setq org-appear-autoemphasis t)
+  (setq org-appear-autolinks t
+        org-appear-autosubmarkers t
+        org-appear-autoentities t
+        org-appear-autokeywords t
+        org-appear-inside-latex t))
+
+(evil-define-command +evil-buffer-org-new (_count file)
+  "Creates a new ORG buffer replacing the current window, optionally editing a certain FILE"
+  :repeat nil
+  (interactive "P<f>")
+  (if file
+      (evil-edit file)
+    (let ((buffer (generate-new-buffer "*new org*")))
+      (set-window-buffer nil buffer)
+      (with-current-buffer buffer
+        (org-mode)
+        (setq-local doom-real-buffer-p t)))))
+
+(map! :leader
+      (:prefix "b"
+       :desc "New empty Org buffer" "o" #'+evil-buffer-org-new))
 
 (setq org-capture-templates
       '(("t" "Tasks" entry
@@ -890,6 +943,16 @@
         ("m" "Meeting" entry
          (file+headline "" "Meetings")
          "* %?\n %U")))
+
+;; (after! ob-jupyter
+(setq org-babel-default-header-args:jupyter-python '((:async . "yes")
+                                                (:session . "py")))
+(org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
+                                                        (bash . t)
+                                                        (julia . t)
+                                                        (python . t)
+                                                        (ein . t)
+                                                        (jupyter . t)))
 
 (map! :map org-mode-map
       :after org
@@ -959,25 +1022,37 @@
 (setq org-directory "~/Documents/org/"
       org-use-property-inheritance t
       org-list-allow-alphabetical t
-      org-export-in-background t
+      ;; org-export-in-background t
       org-fold-catch-invisible-edits 'smart)
 
-(after! org
-  (setq org-startup-folded 'content)
-  (setq org-startup-numerated t))
+(use-package! org-special-block-extras
+  :hook (org-mode . org-special-block-extras-mode))
 
 (after! org
-  (setq org-cycle-include-plain-lists 'integrate)
+  (setq org-startup-folded 'content
+        org-startup-numerated nil))
+
+(after! org
   (setq org-list-demote-modify-bullet '(("+" . "-")
                                         ("-" . "+")
                                         ("1." . "a.")
                                         ("1)" . "a)")))
 
-  (setq org-list-use-circular-motion t)
-  (setq org-list-allow-alphabetical t))
+  (setq org-list-use-circular-motion t
+        org-list-allow-alphabetical t))
 
 (after! org
-  (setq org-startup-with-inline-images t))
+  (setq org-startup-with-inline-images t
+        ;; org-image-actual-width 400
+        imagemagick-enabled-types t)
+  (imagemagick-register-types)
+  (add-to-list 'image-file-name-extensions "eps"))
+
+(after! org
+  (defun org--create-inline-image-advice (img)
+    (nconc img (list :background "#fafafa")))
+  (advice-add 'org--create-inline-image
+              :filter-return #'org--create-inline-image-advice))
 
 ;; (defun org-insert-newline-heading ()
 ;;   ('newline)
@@ -1001,8 +1076,7 @@
     :after #'org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 
-;; (when (string= (system-name) "arch")
-;;   (add-hook! 'org-mode-hook #'org-fragtog-mode))
+(add-hook! 'org-mode-hook #'org-fragtog-mode)
 
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
@@ -1016,9 +1090,35 @@
      (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
       ("begin" "$1" "$" "$$" "\\(" "\\[")))))
 
+(use-package! engrave-faces-latex
+  :after ox-latex
+  :config
+  (setq org-latex-listings 'engraved
+        org-latex-engraved-theme 'doom-one))
+
+;; (org-export-update-features 'latex
+;;                             (no-protrusion-in-code
+;;                              :condition t
+;;                              :when (microtype engraved-code)
+;;                              :snippet "\\ifcsname Code\\endcsname\n  \\let\\oldcode\\Code\\renewcommand{\\Code}{\\microtypesetup{protrusion=false}\\oldcode}\n\\fi"
+;;                              :after (engraved-code microtype)))
+
+(defadvice! org-latex-example-block-engraved (orig-fn example-block contents info)
+  "Like `org-latex-example-block', but supporting an engraved backend"
+  :around #'org-latex-example-block
+  (let ((output-block (funcall orig-fn example-block contents info)))
+    (if (eq 'engraved (plist-get info :latex-listings))
+        (format "\\begin{Code}[alt]\n%s\n\\end{Code}" output-block)
+      output-block)))
+
+;; (after! org
+;; (setq org-latex-src-block-backend 'listings)
+;; (require 'ox-latex)
+;; (add-to-list 'org-latex-packages-alist '("" "listings"))
+;; (add-to-list 'org-latex-packages-alist '("" "color")))
+
 (after! org
   (setq org-highlight-latex-and-related '(native script entities))
-  (require 'org-src)
   (add-to-list 'org-src-block-faces '("latex" (:inherit default :extend t))))
 
 ;; (setq org-format-latex-header "\\documentclass{article}
@@ -1158,10 +1258,8 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (advice-add 'org-create-formula-image :around #'scimax-org-renumber-environment)
   (put 'scimax-org-renumber-environment 'enabled t))
 
-(use-package! org-tree-slide
-  :after org
-  :config
-  (setq org-image-actual-width nil))
+(after! org-beamer-mode
+  (setq org-beamer-theme "[progressbar=foot]Warwick"))
 
 (defun my/org-present-prepare-slide (buffer-name heading)
   (org-overview)  ; Show only top-level headlines
@@ -1250,26 +1348,24 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (setq visual-fill-column-width 110
         visual-fill-column-center-text t))
 
+(setq org-re-reveal-theme "solarized"
+      org-re-reveal-revealjs-version "5.1"
+      org-re-reveal-slide-number "c/t"
+      org-re-reveal-mousewheel "t")
+
+(use-package! org-tree-slide
+  :after org-mode
+  :config
+  (setq org-image-actual-width nil))
+
 (after! org
   (setq org-hide-emphasis-markers t))
 
-(use-package! org-appear
-  :after org
-  :hook (org-mode . org-appear-mode)
-  :config
-  (setq org-appear-autolinks t
-        org-appear-autosubmarkers t
-        org-appear-autoentities t
-        org-appear-autokeywords t))
-
-(after! org
+(after! org-mode
   (setq org-pretty-entities t)
   (setq +org-pretty-mode t))
 
-(eval-after-load "org"
-  '(require 'ox-gfm nil t))
-
-(after! org-roam
+(after! org-roam-mode
   (setq org-roam-directory "~/Documents/org/roam")
   (org-roam-db-autosync-mode))
 
@@ -1277,7 +1373,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
     :after org-roam)
 
 (use-package! org-roam-ui
-    :after org
+    :after org-mode
     ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
     ;; a hookable mode anymore, you're advised to pick something yourself
     ;; if you don't care about startup time, use
@@ -1288,7 +1384,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 
-(after! org
+(after! org-mode
   (defun +yas/org-src-header-p ()
     "Determine whether `point' is within a src-block header or header-args."
     (pcase (org-element-type (org-element-context))
@@ -1399,8 +1495,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
               (add-hook 'before-save-hook #'org-syntax-convert-keyword-case-to-lower nil 'make-it-local)
               (add-hook 'after-save-hook #'org-auto-file-export nil 'make-it-local))))
 
-(after! org
-  (require 'ob-emacs-lisp)
+(after! org-mode
   (require 'ob-fortran)
   (require 'ob-julia)
   (require 'ob-latex)
@@ -1408,57 +1503,48 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (require 'ob-python)
   (require 'ob-shell)
 
-  (setq org-babel-default-header-args
-        (cons '(:results . "output")
-              (assq-delete-all :results org-babel-default-header-args)))
+  (require 'org-src)
+  (require 'ob-emacs-lisp)
+  (require 'ob-async)
+  (require 'ob-jupyter)
+  (require 'jupyter)
+  (require 'jupyter-org-client)
 
   (setq org-src-fontify-natively t
-        org-src-preserve-indentation t
         org-src-tab-acts-natively t))
 
-;; (after! org
-;;   (setq org-structure-template-alist
-;;         '(("lsp" . "#begin_src emacs-lisp\n?\n#+end_src")
-;;           ("f90" . "#begin_src f90\n?\n#+end_src")
-;;           ("f" . "#begin_src fortran\n?\n#+end_src")
-;;           ("jl" . "#begin_src julia\n?\n#+end_src")
-;;           ("tex" . "#begin_src latex\n?\n#+end_src")
-;;           ("lua" . "#begin_src lua\n?\n#+end_src")
-;;           ("py" . "#begin_src python\n?\n#+end_src")
-;;           ("sh" . "#begin_src shell\n?\n#+end_src"))))
+(after! org
+  (setq org-structure-template-alist
+        '(("a" . "export ascii\n")
+          ("b" . "src bash\n")
+          ("c" . "center\n")
+          ("C" . "comment\n")
+          ("e" . "example\n")
+          ("E" . "export\n")
+          ("f" . "src f90\n")
+          ("h" . "export html\n")
+          ("j" . "src jupyter-python\n")
+          ("J" . "src julia\n")
+          ("l" . "src emacs-lisp\n")
+          ("L" . "export latex\n")
+          ("p" . "src python\n")
+          ("q" . "quote\n")
+          ("s" . "src")
+          ("S" . "src shell\n")
+          ("t" . "src latex\n")
+          ("v" . "verse\n"))))
 
-;; (cl-defmacro lsp-org-babel-enable (lang)
-;;   "Support LANG in org source code block."
-;;   (setq centaur-lsp 'lsp-mode)
-;;   (cl-check-type lang stringp)
-;;   (let* ((edit-pre (intern (format "org-babel-edit-prep:%s" lang)))
-;;          (intern-pre (intern (format "lsp--%s" (symbol-name edit-pre)))))
-;;     `(progn
-;;        (defun ,intern-pre (info)
-;;          (let ((file-name (->> info caddr (alist-get :file))))
-;;            (unless file-name
-;;              (setq file-name (make-temp-file "babel-lsp-")))
-;;            (setq buffer-file-name file-name)
-;;            (lsp-deferred)))
-;;        (put ',intern-pre 'function-documentation
-;;             (format "Enable lsp-mode in the buffer of org source block (%s)."
-;;                     (upcase ,lang)))
-;;        (if (fboundp ',edit-pre)
-;;            (advice-add ',edit-pre :after ',intern-pre)
-;;          (progn
-;;            (defun ,edit-pre (info)
-;;              (,intern-pre info))
-;;            (put ',edit-pre 'function-documentation
-;;                 (format "Prepare local buffer environment for org source block (%s)."
-;;                         (upcase ,lang))))))))
-;; (defvar org-babel-lang-list
-;;   '("python" "ipython" "bash" "sh" "emacs-lisp" "fortran" "f90" "julia" "shell" "lua" "latex"))
-;; (dolist (lang org-babel-lang-list)
-;;   (eval `(lsp-org-babel-enable ,lang)))
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "org-insert-template" "w" #'org-insert-structure-template)
 
-;; (defun org-babel-edit-prep:python (babel-info)
-;;   (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
-;;   (lsp))
+(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
+(map! :nvi "C-p" nil) ; evil-paste-pop-next
+(map! :map org-mode-map
+      :after org
+      "C-n" #'org-next-block
+      "C-p" #'org-previous-block)
 
 (use-package! toc-org
   :commands toc-org-enable
@@ -1467,18 +1553,17 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 (after! org
   (defun add-toc ()
     (interactive)
-    (insert "* Table of Contents :toc:\n\n"))
+    (insert "* Table of Contents :toc:\n\n")))
 
-  (map! :map org-mode-map
-        :after org
-        :localleader
-        :prefix ("C" . "insert toc")
-        :desc "insert-toc"
-        "C" #'add-toc))
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "insert-toc"
+      "C" #'add-toc)
 
 (after! org
   (setq org-log-done 'time)
-  (setq org-closed-keep-when-no-todo 'non-nil))
+  (setq org-closed-keep-when-no-todo t))
 
 ;; (defun custom-vterm-popup ()
 ;;   (if (window-dedicated-p nil)
@@ -1499,7 +1584,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 (use-package! eshell-syntax-highlighting
   :after esh-mode
   :config
-  (eshell-syntax-highlighting-global-mode +1)
+  (eshell-syntax-highlighting-global-mode t)
   (setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
         eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
         eshell-history-size 5000
@@ -1508,6 +1593,8 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
         eshell-scroll-to-bottom-on-input t
         eshell-destroy-buffer-when-process-dies t
         eshell-visual-commands'("fish" "htop" "ssh" "top" "zsh")))
+
+;; (set-eshell-alias! "ls" "lsd")
 
 (after! eshell
   (setq eshell-destroy-buffer-when-process-dies t))
