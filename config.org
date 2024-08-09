@@ -11,8 +11,8 @@
   - [[#use-package-guide][Use-package guide]]
 - [[#setup][Setup]]
   - [[#lexical-binding][Lexical Binding]]
+  - [[#browser][Browser]]
   - [[#buffers][Buffers]]
-  - [[#calculator][Calculator]]
   - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
   - [[#deft][Deft]]
@@ -101,40 +101,16 @@ I think this has to go at the top of the file (almost like a shebang)
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 #+end_src
 
-** Buffers
-+ I’d much rather have my new buffers in org-mode than fundamental-mode
-+ Nicer default buffer names
-+ Only include the buffer name in the title, and then if applicable, the project folder
-  - Also mark if the file has unsaved changes
+** Browser
+Use firefox by default
 
 #+begin_src emacs-lisp
-;; (setq-default major-mode 'org-mode)
-
-(setq doom-fallback-buffer-name "► Doom"
-      +doom-dashboard-name "► Doom")
-
-(setq frame-title-format
-      '(""
-        (:eval
-         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "☰ "
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (unless (string= "-" project-name)
-             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
+(after! browse-url
+  (setq browse-url-generic-program "firefox"))
 #+end_src
 
-** Calculator
-Set a keybinding for the Emacs calculator
-
-#+begin_src emacs-lisp
-(map! :leader
-      :prefix ("a" . "Calculator")
-       :desc "Calculator" "c" #'calc
-       :desc "Reset" "R" #'calc-reset)
+** Buffers
++ I’d :desc "Reset" "R" #'calc-reset)
 #+end_src
 
 ** ChatGPT
@@ -215,6 +191,7 @@ Enable inline evaluation of code, but use a nicer prefix
 #+begin_src emacs-lisp
 (setq eros-eval-result-prefix "⟹ ") ; default =>
 #+end_src
+
 ** Evil
 When I want to make a substitution, I want it to be global more often than not — so let’s make that the default.
 
@@ -335,8 +312,7 @@ Automatically wrap text when it reaches the end of the screen
 #+end_src
 
 ** Personal Information
-Some functionality uses this to identify you, e.g. GPG configuration, email
-clients, file templates, and snippets.
+Some functionality uses this to identify you, e.g. GPG configuration, email clients, file templates, and snippets.
 
 Set the GPG directories and increase the cache expiry
 
@@ -344,7 +320,7 @@ Set the GPG directories and increase the cache expiry
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
 
-(setq auth-sources '("~/.authinfo.gpg" "authinfo")
+(setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
 #+end_src
 
@@ -994,7 +970,7 @@ Also make some additions/modifications to the maths symbol alist
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! tex-mode
+(after! LaTeX-mode
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
           ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
@@ -1041,18 +1017,14 @@ Enable a company completion back-end for LaTeX maths symbols
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 #+end_src
 
-*** Compilation
-Use LuaLaTeX with LaTeXMK
-
-#+begin_src emacs-lisp
-(setq TeX-command-extra-options "-lualatex -pdflua")
-#+end_src
-
 *** General
++ Make AUCTeX query the location of the master file
++ Add some compilation options
 
 #+begin_src emacs-lisp
-(after! tex-mode
-  (setq-default TeX-master nil))
+(setq-default TeX-master nil
+              TeX-command "latexmk"
+              TeX-command-extra-options "-lualatex -pdflua -c")
 #+end_src
 
 *** TODO LSP
@@ -1073,7 +1045,7 @@ Set the lsp servers for use in latex mode
 ;;   :config
 ;;   (set-lsp-priority! 'ltex-ls 2))
 
-(after! tex-mode
+(after! LaTeX-mode
   ;; When on mac
   (when (string= (system-name) "maccie")
     (add-to-list 'load-path "/opt/homebrew/bin/texlab")
@@ -1095,7 +1067,8 @@ Set the lsp servers for use in latex mode
 Set the default bibliography location
 
 #+begin_src emacs-lisp
-(setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib")
+(after! LaTeX-mode
+  (setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib"))
 #+end_src
 
 Change the default method of adding/searching for citations with reftex
@@ -1111,7 +1084,7 @@ Change the default method of adding/searching for citations with reftex
 Use the zotra-server backend
 
 #+begin_src emacs-lisp
-(after! tex-mode
+(after! LaTeX-mode
   (setq zotra-backend 'zotra-server)
   (setq zotra-local-server-directory "~/Applications/zotra-server/"))
 #+end_src
@@ -1226,15 +1199,13 @@ Enable the DAP debugger
 
 ** Markdown
 *** Github API rate limit
-Github has a rate limit, limiting how long grip-mode will work for. The following should get around this. This also uses a github authentication token and parses it from a file stored in this directory so it doesn't get made public when I publish this to github.
+Github has a rate limit, limiting how long grip-mode will work for. The following should get around this. This also uses a github authentication token and parses it from authinfo so it doesn't get made public when I publish this to github.
 
 #+begin_src emacs-lisp
 (after! grip-mode
-  (setq grip-github-user "grip-github-user")
-  (setq grip-github-password (substring
-                              (with-temp-buffer
-                                (insert-file-contents "~/.doom.d/grip_pw.txt")
-                                (buffer-string)) 0 -1)))
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq grip-github-user (car credential)
+          grip-github-password (cadr credential))))
 #+end_src
 
 *** Line Wrapping
@@ -1245,13 +1216,14 @@ Use visual line wrapping
 #+end_src
 
 *** Live Preview
-Automatically open live preview when opening a markdown file
+Live preview markdown files
 
 #+begin_src emacs-lisp
-(after! markdown-mode
+(after! gfm-mode
   ;; (add-hook! 'markdown-mode-hook #'grip-mode)
   (setq grip-sleep-time 2
-        grip-preview-use-webkit t)
+        grip-preview-use-webkit nil
+        grip-url-browser "firefox")
   (when (string= (system-name) "arch")
     (setq grip-binary-path "/usr/bin/grip"))
   (when (string= (system-name) "maccie")

@@ -1,27 +1,7 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-;; (setq-default major-mode 'org-mode)
-
-(setq doom-fallback-buffer-name "► Doom"
-      +doom-dashboard-name "► Doom")
-
-(setq frame-title-format
-      '(""
-        (:eval
-         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "☰ "
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (unless (string= "-" project-name)
-             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
-
-(map! :leader
-      :prefix ("a" . "Calculator")
-       :desc "Calculator" "c" #'calc
-       :desc "Reset" "R" #'calc-reset)
+(after! browse-url
+  (setq browse-url-generic-program "firefox"))
 
 (setq chatgpt-shell-openai-key
       (lambda ()
@@ -148,7 +128,7 @@
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
 
-(setq auth-sources '("~/.authinfo.gpg" "authinfo")
+(setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
 
 (setq projectile-sort-order 'recentf
@@ -529,7 +509,7 @@
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! tex-mode
+(after! LaTeX-mode
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
           ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
@@ -570,10 +550,9 @@
 
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 
-(setq TeX-command-extra-options "-lualatex -pdflua")
-
-(after! tex-mode
-  (setq-default TeX-master nil))
+(setq-default TeX-master nil
+              TeX-command "latexmk"
+              TeX-command-extra-options "-lualatex -pdflua -c")
 
 ;; (use-package! lsp-ltex
 ;;   ;; :hook (text-mode . (lambda ()
@@ -589,7 +568,7 @@
 ;;   :config
 ;;   (set-lsp-priority! 'ltex-ls 2))
 
-(after! tex-mode
+(after! LaTeX-mode
   ;; When on mac
   (when (string= (system-name) "maccie")
     (add-to-list 'load-path "/opt/homebrew/bin/texlab")
@@ -606,14 +585,15 @@
   (with-eval-after-load "bibtex"
     (add-hook 'bibtex-mode-hook 'lsp)))
 
-(setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib")
+(after! LaTeX-mode
+  (setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib"))
 
 (map! :map reftex-mode-map
       :localleader
       :desc "reftex-cite" "r" #'reftex-citation
       :desc "reftex-label" "l" #'reftex-label)
 
-(after! tex-mode
+(after! LaTeX-mode
   (setq zotra-backend 'zotra-server)
   (setq zotra-local-server-directory "~/Applications/zotra-server/"))
 
@@ -710,18 +690,17 @@
       :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
 
 (after! grip-mode
-  (setq grip-github-user "grip-github-user")
-  (setq grip-github-password (substring
-                              (with-temp-buffer
-                                (insert-file-contents "~/.doom.d/grip_pw.txt")
-                                (buffer-string)) 0 -1)))
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq grip-github-user (car credential)
+          grip-github-password (cadr credential))))
 
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
-(after! markdown-mode
+(after! gfm-mode
   ;; (add-hook! 'markdown-mode-hook #'grip-mode)
   (setq grip-sleep-time 2
-        grip-preview-use-webkit t)
+        grip-preview-use-webkit nil
+        grip-url-browser "firefox")
   (when (string= (system-name) "arch")
     (setq grip-binary-path "/usr/bin/grip"))
   (when (string= (system-name) "maccie")

@@ -105,7 +105,7 @@
        ;; (spell            ; tasing you for misspelling mispelling
        ;;  +hunspell
        ;;  +everywhere)
-       grammar           ; tasing grammar mistake every you make
+       ;; grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -113,8 +113,8 @@
        (debugger          ; FIXME stepping through code, to help you add bugs
         +lsp)
        direnv
-       ;; (docker
-       ;;  +lsp)
+       (docker
+        +lsp)
        editorconfig      ; let someone else argue about tabs vs spaces
        ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
@@ -132,7 +132,7 @@
        pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
        ;;terraform         ; infrastructure as code
-       ;;tmux              ; an API for interacting with tmux
+       tmux              ; an API for interacting with tmux
        tree-sitter       ; text-based syntax highlighting
        ;; upload            ; map local to remote projects via ssh/ftp
 
@@ -218,7 +218,6 @@
        (python            ; beautiful is better than ugly
         +tree-sitter
         +cython
-        +poetry
         +pyright
         +pyenv
         +lsp)
