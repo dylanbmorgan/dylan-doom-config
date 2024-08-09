@@ -102,10 +102,10 @@
        :checkers
        (syntax              ; tasing you for every semicolon you forget
         +childframe)
-       (spell            ; tasing you for misspelling mispelling
-        +hunspell
-        +everywhere)
-       ;; grammar           ; tasing grammar mistake every you make
+       ;; (spell            ; tasing you for misspelling mispelling
+       ;;  +hunspell
+       ;;  +everywhere)
+       grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -218,6 +218,7 @@
        (python            ; beautiful is better than ugly
         +tree-sitter
         +cython
+        +poetry
         +pyright
         +pyenv
         +lsp)

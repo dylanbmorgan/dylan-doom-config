@@ -59,6 +59,7 @@
   - [[#babel][Babel]]
   - [[#buffers-1][Buffers]]
   - [[#capture][Capture]]
+  - [[#company][Company]]
   - [[#jupyter][Jupyter]]
   - [[#exporting][Exporting]]
   - [[#file-conversions][File Conversions]]
@@ -131,9 +132,9 @@ Set a keybinding for the Emacs calculator
 
 #+begin_src emacs-lisp
 (map! :leader
-      (:prefix ("a" . "Calculator")
+      :prefix ("a" . "Calculator")
        :desc "Calculator" "c" #'calc
-       :desc "Reset" "R" #'calc-reset))
+       :desc "Reset" "R" #'calc-reset)
 #+end_src
 
 ** ChatGPT
@@ -302,6 +303,23 @@ Integrate books into emacs
 
 ** TODO Languagetool
 
+#+begin_src emacs-lisp
+;; (use-package! languagetool
+;;   :defer t
+;;   :commands (languagetool-check
+;;              languagetool-clear-suggestions
+;;              languagetool-correct-at-point
+;;              languagetool-correct-buffer
+;;              languagetool-set-language
+;;              languagetool-server-mode
+;;              languagetool-server-start
+;;              languagetool-server-stop)
+;;   :config
+;;   (setq languagetool-java-arguments '("-Dfile.encoding=UTF-8" "-cp" "/opt/homebrew/Cellar/languagetool/*/libexec/*")
+;;         languagetool-console-command "org.languagetool.server.commandline.Main"
+;;         languagetool-server-command "org.languagetool.server.HTTPServer"))
+#+end_src
+
 ** Lines
 This determines the style of line numbers in effect. If set to `nil', line numbers are disabled. For relative line numbers, set this to `relative'.
 
@@ -362,12 +380,14 @@ My spelling is really bad so it needs checkling
 (use-package! jinx
   :defer t
   :init
+  (setenv "PKG_CONFIG_PATH" (concat "/opt/homebrew/opt/glib/lib/pkgconfig/:" (getenv "PKG_CONFIG_PATH")))
   (add-hook 'doom-init-ui-hook #'global-jinx-mode)
   :config
   (setq jinx-languages "en_GB")
   ;; Extra face(s) to ignore
   (push 'org-inline-src-block
         (alist-get 'org-mode jinx-exclude-faces)))
+
 ;;   ;; Take over the relevant bindings.
 ;;   (after! ispell
 ;;     (global-set-key [remap ispell-word] #'jinx-correct))
@@ -447,16 +467,10 @@ Lastly, while I'm not sure quite why it happens, but after a bit it seems that n
 To enable bidirectional synchronisation of LSP workspace folders and treemacs projects.
 
 #+begin_src emacs-lisp
-(lsp-treemacs-sync-mode 1)
-;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
-;; (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
-#+end_src
-
-General settings
-
-#+begin_src emacs-lisp
 (use-package! treemacs
   :defer t
+  :init
+  (lsp-treemacs-sync-mode 1)
   :config
   (progn
     (setq treemacs-eldoc-display                   'detailed
@@ -1306,23 +1320,6 @@ Disable prettify-symbols in python modes
 #+end_src
 
 *** Formatters and Linters
-**** Black
-
-#+begin_src emacs-lisp
-(use-package! python-black
-  :after python
-  :config
-  (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-  (map! :map python-mode-map
-        :localleader
-        :prefix ("b" . "black")
-        :desc "blacken buffer" "b" #'python-black-buffer
-        :desc "blacken region" "r" #'python-black-region
-        :desc "blacken statement" "s" #'python-black-statement))
-
-(setq-hook! 'python-mode-hook +format-with-lsp nil)
-#+end_src
-
 **** Ruff
 
 #+begin_src emacs-lisp
@@ -1494,18 +1491,12 @@ Also set a keybinding for this
 (map! :map org-mode-map
       :after org
       :localleader
-      :prefix ("j" . "org header")
+      :prefix ("k" . "org header")
       :desc "auto tangle tag"
       "a" 'insert-auto-tangle-tag)
 #+end_src
 
 ** Agenda
-Set filepath for org agenda
-
-#+begin_src emacs-lisp
-;; (setq org-agenda-files '("~/Documents/"))
-#+end_src
-
 *** TODO Super Agenda
 ** Appear
 Toggle pretty entities in org mode when the cursor moves over them
@@ -1523,7 +1514,96 @@ Toggle pretty entities in org mode when the cursor moves over them
         org-appear-inside-latex t))
 #+end_src
 
-** TODO Babel
+** Babel
++ Use python code blocks in org mode (as well as some other languages thrown in)
++ Don't require :results output as a header in python SRC blocks
++ Formatting for source code blocks
+
+#+begin_src emacs-lisp
+(after! org
+  (require 'ob-fortran)
+  (require 'ob-julia)
+  (require 'ob-latex)
+  (require 'ob-lua)
+  (require 'ob-python)
+  (require 'ob-shell)
+
+  (require 'org-src)
+  (require 'ob-emacs-lisp)
+  (require 'ob-async)
+  (require 'ob-jupyter)
+  (require 'jupyter)
+  (require 'jupyter-org-client)
+
+  (setq org-src-fontify-natively t
+        org-src-tab-acts-natively t))
+#+end_src
+
+Specify shortcuts for src blocks with specific languages
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-structure-template-alist
+        '(("a" . "export ascii\n")
+          ("b" . "src bash\n")
+          ("c" . "center\n")
+          ("C" . "comment\n")
+          ("e" . "example\n")
+          ("E" . "export\n")
+          ("f" . "src f90\n")
+          ("h" . "export html\n")
+          ("j" . "src jupyter-python\n")
+          ("J" . "src julia\n")
+          ("l" . "src emacs-lisp\n")
+          ("L" . "export latex\n")
+          ("p" . "src python\n")
+          ("q" . "quote\n")
+          ("s" . "src")
+          ("S" . "src shell\n")
+          ("t" . "src latex\n")
+          ("v" . "verse\n"))))
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "org-insert-template" "w" #'org-insert-structure-template)
+#+end_src
+
+Add a keybinding to skip to the next code block. I don't use evil-paste-pop so it makes sense to unbind it
+
+#+begin_src emacs-lisp
+(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
+(map! :nvi "C-p" nil) ; evil-paste-pop-next
+(map! :map org-mode-map
+      :after org
+      "C-n" #'org-next-block
+      "C-p" #'org-previous-block)
+#+end_src
+
+Define keybindings for some commands I commonly use
+
+#+begin_src emacs-lisp
+(map! :map org-mode-map
+      :after org
+      :localleader
+      "k" nil
+      "K" nil
+      :prefix ("B" . "babel")
+      :desc "Insert header arg" "a" #'org-babel-insert-header-arg
+      :desc "Execute buffer" "b" #'org-babel-execute-buffer
+      :desc "Check SRC block" "c" #'org-babel-check-src-block
+      :desc "Demarcate block" "d" #'org-babel-demarcate-block
+      :desc "Go to src block" "g" #'org-babel-goto-named-src-block
+      :desc "Go to result" "G" #'org-babel-goto-named-result
+      :desc "Toggle result visibility" "h" #'org-babel-hide-result-toggle
+      :desc "Hide all results" "H" #'org-babel-result-hide-all
+      :desc "Jupyter buffer" "j" #'org-babel-jupyter-scratch-buffer
+      :desc "Open result" "o" #'org-babel-open-src-block-result
+      :desc "Remove result" "r" #'org-babel-remove-result
+      :desc "Remove all results" "R" #'+org/remove-result-blocks
+      :desc "Execute subtree" "s" #'org-babel-execute-subtree)
+#+end_src
+
 ** Buffers
 Make creating org buffers a little easier
 
@@ -1541,15 +1621,16 @@ Make creating org buffers a little easier
         (setq-local doom-real-buffer-p t)))))
 
 (map! :leader
-      (:prefix "b"
-       :desc "New empty Org buffer" "o" #'+evil-buffer-org-new))
+      :prefix "b"
+      :desc "New empty Org buffer" "o" #'+evil-buffer-org-new)
 #+end_src
 
 ** Capture
 Quickly take down notes
 
 #+begin_src emacs-lisp
-(setq org-capture-templates
+(after! org
+  (setq org-capture-templates
       '(("t" "Tasks" entry
          (file+headline "" "Inbox")
          "* TODO %?\n %U")
@@ -1558,21 +1639,52 @@ Quickly take down notes
          "* TODO Call %?\n %U")
         ("m" "Meeting" entry
          (file+headline "" "Meetings")
-         "* %?\n %U")))
+         "* %?\n %U"))))
 #+end_src
-** Jupyter
-Enable Jupyter support in org-mode using the ein and/or jupyter packages
+** Company
+Company completion of org blocks
 
 #+begin_src emacs-lisp
-;; (after! ob-jupyter
-(setq org-babel-default-header-args:jupyter-python '((:async . "yes")
-                                                (:session . "py")))
-(org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
-                                                        (bash . t)
-                                                        (julia . t)
-                                                        (python . t)
-                                                        (ein . t)
-                                                        (jupyter . t)))
+(use-package! company-org-block
+  :custom
+  (company-org-block-edit-style 'auto) ;; 'auto, 'prompt, or 'inline
+  :hook ((org-mode . (lambda ()
+                       (setq-local company-backends '(company-org-block))
+                       (company-mode +1)))))
+#+end_src
+** Jupyter
+Enable Jupyter support in org-mode using the Jupyter package
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
+                                                       (:session . "py")))
+  (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
+                                                           (bash . t)
+                                                           (julia . t)
+                                                           (python . t)
+                                                           (jupyter . t)))
+  (setq jupyter-org-queue-requests t))
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :prefix ("j"" . "jupyter)
+      :desc "Execute and next block" "b" #'jupyter-org-execute-and-next-block
+      :desc "Clone block" "c" #'jupyter-org-clone-block
+      :desc "Copy block and results" "C" #'jupyter-org-copy-block-and-results
+      :desc "Go to error" "e" #'jupyter-org-goto-error
+      :desc "Edit header" "h" #'jupyter-org-edit-header
+      :desc "Interrupt kernel" "i" #'jupyter-org-interrupt-kernel
+      :desc "Jump to block" "j" #'jupyter-org-jump-to-block
+      :desc "Move block" "m" #'jupyter-org-move-src-block
+      :desc "Merge blocks" "M" #'jupyter-org-merge-blocks
+      :desc "Next busy block" "n" #'jupyter-org-next-busy-src-block
+      :desc "Previous busy block" "N" #'jupyter-org-previous-busy-src-block
+      :desc "Execute to point" "p" #'jupyter-org-execute-to-point
+      :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
+      :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
+      :desc "Split block" "s" #'jupyter-org-split-src-block)
 #+end_src
 
 ** TODO Exporting
@@ -1648,7 +1760,7 @@ Provide different options for default headers for emacs org files
 (map! :map org-mode-map
       :after org
       :localleader
-      :prefix ("j" . "org header")
+      :prefix ("k" . "org header")
       :desc "literate config"
       "l" 'org-literate-config
       :desc "note taking"
@@ -2261,69 +2373,14 @@ Typing out src block headers all the time is a pain
 #+end_src
 
 ** SRC Blocks
-+ Use python code blocks in org mode (as well as some other languages thrown in)
-+ Don't require :results output as a header in python SRC blocks
-+ Formatting for source code blocks
+Define a new keybinding to edit source blocks
 
 #+begin_src emacs-lisp
-(after! org-mode
-  (require 'ob-fortran)
-  (require 'ob-julia)
-  (require 'ob-latex)
-  (require 'ob-lua)
-  (require 'ob-python)
-  (require 'ob-shell)
-
-  (require 'org-src)
-  (require 'ob-emacs-lisp)
-  (require 'ob-async)
-  (require 'ob-jupyter)
-  (require 'jupyter)
-  (require 'jupyter-org-client)
-
-  (setq org-src-fontify-natively t
-        org-src-tab-acts-natively t))
-#+end_src
-
-Specify shortcuts for src blocks with specific languages
-
-#+begin_src emacs-lisp
-(after! org
-  (setq org-structure-template-alist
-        '(("a" . "export ascii\n")
-          ("b" . "src bash\n")
-          ("c" . "center\n")
-          ("C" . "comment\n")
-          ("e" . "example\n")
-          ("E" . "export\n")
-          ("f" . "src f90\n")
-          ("h" . "export html\n")
-          ("j" . "src jupyter-python\n")
-          ("J" . "src julia\n")
-          ("l" . "src emacs-lisp\n")
-          ("L" . "export latex\n")
-          ("p" . "src python\n")
-          ("q" . "quote\n")
-          ("s" . "src")
-          ("S" . "src shell\n")
-          ("t" . "src latex\n")
-          ("v" . "verse\n"))))
-
 (map! :map org-mode-map
       :after org
       :localleader
-      :desc "org-insert-template" "w" #'org-insert-structure-template)
-#+end_src
-
-Add a keybinding to skip to the next code block. I don't use evil-paste-pop so it makes sense to unbind it
-
-#+begin_src emacs-lisp
-(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
-(map! :nvi "C-p" nil) ; evil-paste-pop-next
-(map! :map org-mode-map
-      :after org
-      "C-n" #'org-next-block
-      "C-p" #'org-previous-block)
+      "'" nil
+      "`" #'org-edit-special)
 #+end_src
 
 ** Table of Contents

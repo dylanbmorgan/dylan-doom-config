@@ -19,9 +19,9 @@
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 
 (map! :leader
-      (:prefix ("a" . "Calculator")
+      :prefix ("a" . "Calculator")
        :desc "Calculator" "c" #'calc
-       :desc "Reset" "R" #'calc-reset))
+       :desc "Reset" "R" #'calc-reset)
 
 (setq chatgpt-shell-openai-key
       (lambda ()
@@ -123,6 +123,21 @@
 (add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
 (add-hook 'gptel-post-response-functions 'gptel-end-oF-response) ; TODO Bind key to end of response
 
+;; (use-package! languagetool
+;;   :defer t
+;;   :commands (languagetool-check
+;;              languagetool-clear-suggestions
+;;              languagetool-correct-at-point
+;;              languagetool-correct-buffer
+;;              languagetool-set-language
+;;              languagetool-server-mode
+;;              languagetool-server-start
+;;              languagetool-server-stop)
+;;   :config
+;;   (setq languagetool-java-arguments '("-Dfile.encoding=UTF-8" "-cp" "/opt/homebrew/Cellar/languagetool/*/libexec/*")
+;;         languagetool-console-command "org.languagetool.server.commandline.Main"
+;;         languagetool-server-command "org.languagetool.server.HTTPServer"))
+
 (setq display-line-numbers-type 'relative)
 
 (add-hook 'text-mode-hook 'turn-on-visual-line-mode)
@@ -157,12 +172,14 @@
 (use-package! jinx
   :defer t
   :init
+  (setenv "PKG_CONFIG_PATH" (concat "/opt/homebrew/opt/glib/lib/pkgconfig/:" (getenv "PKG_CONFIG_PATH")))
   (add-hook 'doom-init-ui-hook #'global-jinx-mode)
   :config
   (setq jinx-languages "en_GB")
   ;; Extra face(s) to ignore
   (push 'org-inline-src-block
         (alist-get 'org-mode jinx-exclude-faces)))
+
 ;;   ;; Take over the relevant bindings.
 ;;   (after! ispell
 ;;     (global-set-key [remap ispell-word] #'jinx-correct))
@@ -170,12 +187,10 @@
 ;;     (global-set-key [remap evil-next-flyspell-error] #'jinx-next)
 ;;     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
 
-(lsp-treemacs-sync-mode 1)
-;; (add-hook 'projectile-find-file-hook #'+treemacs/toggle 'append)
-;; (add-hook 'projectile-find-file-hook #'treemacs-select-window 'append)
-
 (use-package! treemacs
   :defer t
+  :init
+  (lsp-treemacs-sync-mode 1)
   :config
   (progn
     (setq treemacs-eldoc-display                   'detailed
@@ -760,19 +775,6 @@
 ;; (after! python
 ;;   (setq prettify-symbols-mode nil))
 
-(use-package! python-black
-  :after python
-  :config
-  (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-  (map! :map python-mode-map
-        :localleader
-        :prefix ("b" . "black")
-        :desc "blacken buffer" "b" #'python-black-buffer
-        :desc "blacken region" "r" #'python-black-region
-        :desc "blacken statement" "s" #'python-black-statement))
-
-(setq-hook! 'python-mode-hook +format-with-lsp nil)
-
 ;; (use-package! lsp-mode
 ;;   :hook (python-mode . lsp-deferred)
 ;;   ;; :commands lsp-deferred
@@ -900,11 +902,9 @@
 (map! :map org-mode-map
       :after org
       :localleader
-      :prefix ("j" . "org header")
+      :prefix ("k" . "org header")
       :desc "auto tangle tag"
       "a" 'insert-auto-tangle-tag)
-
-;; (setq org-agenda-files '("~/Documents/"))
 
 (use-package! org-appear
   :after org
@@ -916,6 +916,77 @@
         org-appear-autoentities t
         org-appear-autokeywords t
         org-appear-inside-latex t))
+
+(after! org
+  (require 'ob-fortran)
+  (require 'ob-julia)
+  (require 'ob-latex)
+  (require 'ob-lua)
+  (require 'ob-python)
+  (require 'ob-shell)
+
+  (require 'org-src)
+  (require 'ob-emacs-lisp)
+  (require 'ob-async)
+  (require 'ob-jupyter)
+  (require 'jupyter)
+  (require 'jupyter-org-client)
+
+  (setq org-src-fontify-natively t
+        org-src-tab-acts-natively t))
+
+(after! org
+  (setq org-structure-template-alist
+        '(("a" . "export ascii\n")
+          ("b" . "src bash\n")
+          ("c" . "center\n")
+          ("C" . "comment\n")
+          ("e" . "example\n")
+          ("E" . "export\n")
+          ("f" . "src f90\n")
+          ("h" . "export html\n")
+          ("j" . "src jupyter-python\n")
+          ("J" . "src julia\n")
+          ("l" . "src emacs-lisp\n")
+          ("L" . "export latex\n")
+          ("p" . "src python\n")
+          ("q" . "quote\n")
+          ("s" . "src")
+          ("S" . "src shell\n")
+          ("t" . "src latex\n")
+          ("v" . "verse\n"))))
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "org-insert-template" "w" #'org-insert-structure-template)
+
+(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
+(map! :nvi "C-p" nil) ; evil-paste-pop-next
+(map! :map org-mode-map
+      :after org
+      "C-n" #'org-next-block
+      "C-p" #'org-previous-block)
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      "k" nil
+      "K" nil
+      :prefix ("B" . "babel")
+      :desc "Insert header arg" "a" #'org-babel-insert-header-arg
+      :desc "Execute buffer" "b" #'org-babel-execute-buffer
+      :desc "Check SRC block" "c" #'org-babel-check-src-block
+      :desc "Demarcate block" "d" #'org-babel-demarcate-block
+      :desc "Go to src block" "g" #'org-babel-goto-named-src-block
+      :desc "Go to result" "G" #'org-babel-goto-named-result
+      :desc "Toggle result visibility" "h" #'org-babel-hide-result-toggle
+      :desc "Hide all results" "H" #'org-babel-result-hide-all
+      :desc "Jupyter buffer" "j" #'org-babel-jupyter-scratch-buffer
+      :desc "Open result" "o" #'org-babel-open-src-block-result
+      :desc "Remove result" "r" #'org-babel-remove-result
+      :desc "Remove all results" "R" #'+org/remove-result-blocks
+      :desc "Execute subtree" "s" #'org-babel-execute-subtree)
 
 (evil-define-command +evil-buffer-org-new (_count file)
   "Creates a new ORG buffer replacing the current window, optionally editing a certain FILE"
@@ -930,10 +1001,11 @@
         (setq-local doom-real-buffer-p t)))))
 
 (map! :leader
-      (:prefix "b"
-       :desc "New empty Org buffer" "o" #'+evil-buffer-org-new))
+      :prefix "b"
+      :desc "New empty Org buffer" "o" #'+evil-buffer-org-new)
 
-(setq org-capture-templates
+(after! org
+  (setq org-capture-templates
       '(("t" "Tasks" entry
          (file+headline "" "Inbox")
          "* TODO %?\n %U")
@@ -942,17 +1014,44 @@
          "* TODO Call %?\n %U")
         ("m" "Meeting" entry
          (file+headline "" "Meetings")
-         "* %?\n %U")))
+         "* %?\n %U"))))
 
-;; (after! ob-jupyter
-(setq org-babel-default-header-args:jupyter-python '((:async . "yes")
-                                                (:session . "py")))
-(org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
-                                                        (bash . t)
-                                                        (julia . t)
-                                                        (python . t)
-                                                        (ein . t)
-                                                        (jupyter . t)))
+(use-package! company-org-block
+  :custom
+  (company-org-block-edit-style 'auto) ;; 'auto, 'prompt, or 'inline
+  :hook ((org-mode . (lambda ()
+                       (setq-local company-backends '(company-org-block))
+                       (company-mode +1)))))
+
+(after! org
+  (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
+                                                       (:session . "py")))
+  (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
+                                                           (bash . t)
+                                                           (julia . t)
+                                                           (python . t)
+                                                           (jupyter . t)))
+  (setq jupyter-org-queue-requests t))
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :prefix ("j"" . "jupyter)
+      :desc "Execute and next block" "b" #'jupyter-org-execute-and-next-block
+      :desc "Clone block" "c" #'jupyter-org-clone-block
+      :desc "Copy block and results" "C" #'jupyter-org-copy-block-and-results
+      :desc "Go to error" "e" #'jupyter-org-goto-error
+      :desc "Edit header" "h" #'jupyter-org-edit-header
+      :desc "Interrupt kernel" "i" #'jupyter-org-interrupt-kernel
+      :desc "Jump to block" "j" #'jupyter-org-jump-to-block
+      :desc "Move block" "m" #'jupyter-org-move-src-block
+      :desc "Merge blocks" "M" #'jupyter-org-merge-blocks
+      :desc "Next busy block" "n" #'jupyter-org-next-busy-src-block
+      :desc "Previous busy block" "N" #'jupyter-org-previous-busy-src-block
+      :desc "Execute to point" "p" #'jupyter-org-execute-to-point
+      :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
+      :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
+      :desc "Split block" "s" #'jupyter-org-split-src-block)
 
 (map! :map org-mode-map
       :after org
@@ -1009,7 +1108,7 @@
 (map! :map org-mode-map
       :after org
       :localleader
-      :prefix ("j" . "org header")
+      :prefix ("k" . "org header")
       :desc "literate config"
       "l" 'org-literate-config
       :desc "note taking"
@@ -1495,56 +1594,11 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
               (add-hook 'before-save-hook #'org-syntax-convert-keyword-case-to-lower nil 'make-it-local)
               (add-hook 'after-save-hook #'org-auto-file-export nil 'make-it-local))))
 
-(after! org-mode
-  (require 'ob-fortran)
-  (require 'ob-julia)
-  (require 'ob-latex)
-  (require 'ob-lua)
-  (require 'ob-python)
-  (require 'ob-shell)
-
-  (require 'org-src)
-  (require 'ob-emacs-lisp)
-  (require 'ob-async)
-  (require 'ob-jupyter)
-  (require 'jupyter)
-  (require 'jupyter-org-client)
-
-  (setq org-src-fontify-natively t
-        org-src-tab-acts-natively t))
-
-(after! org
-  (setq org-structure-template-alist
-        '(("a" . "export ascii\n")
-          ("b" . "src bash\n")
-          ("c" . "center\n")
-          ("C" . "comment\n")
-          ("e" . "example\n")
-          ("E" . "export\n")
-          ("f" . "src f90\n")
-          ("h" . "export html\n")
-          ("j" . "src jupyter-python\n")
-          ("J" . "src julia\n")
-          ("l" . "src emacs-lisp\n")
-          ("L" . "export latex\n")
-          ("p" . "src python\n")
-          ("q" . "quote\n")
-          ("s" . "src")
-          ("S" . "src shell\n")
-          ("t" . "src latex\n")
-          ("v" . "verse\n"))))
-
 (map! :map org-mode-map
       :after org
       :localleader
-      :desc "org-insert-template" "w" #'org-insert-structure-template)
-
-(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
-(map! :nvi "C-p" nil) ; evil-paste-pop-next
-(map! :map org-mode-map
-      :after org
-      "C-n" #'org-next-block
-      "C-p" #'org-previous-block)
+      "'" nil
+      "`" #'org-edit-special)
 
 (use-package! toc-org
   :commands toc-org-enable
