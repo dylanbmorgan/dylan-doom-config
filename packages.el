@@ -49,6 +49,7 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 
+(package! atomic-chrome)
 (package! auctex)
 (package! chatgpt-shell)
 (package! company-org-block)
@@ -60,7 +61,16 @@
 ;; (package! fortpy)
 (package! gptel)
 (package! jinx)
+(package! julia-formatter
+  :recipe (:host codeberg :repo "FelipeLema/julia-formatter.el"
+           :files ( "julia-formatter.el" ;; main script executed by Emacs
+                    "toml-respects-json.el" ;; script to parse format config toml files
+                    "formatter_service.jl" ;; script executed by Julia
+                    "Manifest.toml" "Project.toml"))) ;; project files
 (package! languagetool)
+(package! live-py-mode)
+;; (package! lsp-julia)
+;; (package! moom)
 (package! numpydoc)
 (package! obsidian)
 (package! org-ai)
@@ -78,5 +88,6 @@
 (package! ox-gfm)
 (package! poetry)
 (package! pov-mode)
+(package! systemd)
 (package! vterm-toggle)
 (package! zotra)

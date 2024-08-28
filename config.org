@@ -67,6 +67,7 @@
   - [[#general-2][General]]
   - [[#headings][Headings]]
   - [[#images][Images]]
+  - [[#journal][Journal]]
   - [[#keybindings][Keybindings]]
   - [[#latex-fragments][LaTeX Fragments]]
   - [[#presentations][Presentations]]
@@ -105,8 +106,14 @@ I think this has to go at the top of the file (almost like a shebang)
 Use firefox by default
 
 #+begin_src emacs-lisp
-(after! browse-url
-  (setq browse-url-generic-program "firefox"))
+(setq browse-url-browser-function 'browse-url-firefox
+      browse-url-generic-program "firefox")
+#+end_src
+
+Enable usage of the atomic extension
+
+#+begin_src emacs-lisp
+(add-transient-hook! 'focus-out-hook (atomic-chrome-start-server))
 #+end_src
 
 ** Buffers
@@ -116,7 +123,7 @@ Use firefox by default
 ** ChatGPT
 For now the ChatGPT API is paid for so I cannot use these but I'll keep the configuration here
 
-*** ChatGPT-Shell
+*** TODO ChatGPT-Shell
 Lazy load API key
 
 #+begin_src emacs-lisp
@@ -125,7 +132,7 @@ Lazy load API key
         (auth-source-pick-first-password :host "api.openai.com")))
 #+end_src
 
-*** Org-AI
+*** TODO Org-AI
 Add a querying keybind for the chatgpt package I'm using
 
 #+begin_src emacs-lisp
@@ -157,7 +164,7 @@ Add a querying keybind for the chatgpt package I'm using
   ;;       :desc "Mark prompt at point" "SPC" #'org-ai-mark-region-at-point))
 #+end_src
 
-** TODO Delays
+** Delays
 I like to have custom delays for company mode, the leader key, and the spell checker:
 
 #+begin_src emacs-lisp
@@ -176,7 +183,7 @@ I like to have custom delays for company mode, the leader key, and the spell che
 (setq deft-directory "~/Documents/deft/")
 #+end_src
 
-** Ellama
+** TODO Ellama
 
 #+begin_src emacs-lisp
 (use-package! ellama
@@ -226,6 +233,7 @@ Integrate books into emacs
 + Include a 'leader-undo' button
 + Visual fix for indent guides
 + Disable massive toolbar on MacOS
++ Enable nice scrolling
 
 #+begin_src emacs-lisp
 (setq shell-file-name (executable-find "bash"))
@@ -259,9 +267,11 @@ Integrate books into emacs
 
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
+
+(pixel-scroll-precision-mode)
 #+end_src
 
-** gptel
+** TODO gptel
 
 #+begin_src emacs-lisp
 (use-package! gptel
@@ -372,7 +382,7 @@ My spelling is really bad so it needs checkling
 ;;     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
 #+end_src
 
-** systemd
+** TODO systemd
 Use emacs as a client.
 
 Setup the systemd file here
@@ -386,8 +396,8 @@ Wants=gpg-agent.service
 
 [Service]
 Type=forking
-ExecStart=fish -c '/home/dylanmorgan/Applications/emacs-29.3/build/src/emacs --daemon && /home/dylanmorgan/Applications/emacs-29.3/build/lib-src/emacsclient -c --eval "(delete-frame)"'
-ExecStop=/home/dylanmorgan/Applications/emacs-29.3/build/lib-src/emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
+ExecStart=fish -c 'emacs --daemon && emacsclient -c --eval "(delete-frame)"'
+ExecStop=emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
 Environment=COLORTERM=truecolor
 Restart=on-failure
 
@@ -397,7 +407,7 @@ WantedBy=default.target
 
 which is then enabled by
 
-#+begin_src shell :tangle (if (string= "enabled\n" (shell-command-to-string "systemctl --user is-enabled emacs.service")) "no" "setup.sh")
+#+begin_src fish :tangle (if (string= "enabled\n" (shell-command-to-string "systemctl --user is-enabled emacs.service")) "no" "setup.sh")
 systemctl --user enable emacs.service
 #+end_src
 
@@ -707,15 +717,14 @@ Not to toot my own trumpet, but I like this pretty cool splash screen that I mad
 #+end_src
 
 ** Tabs
-
 #+begin_src emacs-lisp
 (after! centaur-tabs
   (centaur-tabs-mode -1)
   (setq centaur-tabs-set-icons t
         ;; centaur-tabs-style "wave"
         ;; centaur-tabs-set-modified-marker t
-        centaur-tabs-modified-marker "o"
-        centaur-tabs-close-button "×"
+        ;; centaur-tabs-modified-marker "o"
+        ;; centaur-tabs-close-button "×"
         centaur-tabs-set-bar 'left
         centaur-tabs-gray-out-icons 'buffer))
   ;; (centaur-tabs-change-fonts "P22 Underground Book" 160))
@@ -923,6 +932,7 @@ Set Fortran and Fortran 90 mode for appropriate extensions
 #+end_src
 
 ** Julia
+Set the default number of Julia threads to 6
 
 #+begin_src emacs-lisp
 ;; (use-package! eglot-jl
@@ -936,18 +946,26 @@ Set Fortran and Fortran 90 mode for appropriate extensions
   ("julia" . julia-mode))
 #+end_src
 
-*** LSP
+*** Format
+Enable formatting on save for Julia buffers
 
 #+begin_src emacs-lisp
-(use-package! lsp-julia
-  :init
-  (setq lsp-julia-package-dir nil
-        lsp-julia-flags `("-J~/.julia/compiled/v1.10/ite7n_ylCQA.so"))
-  (require 'lsp-julia)
-  :config
+(after! julia-mode
+  (load-file "~/.config/emacs/.local/straight/repos/julia-formatter.el/julia-formatter.el")
+  (add-hook 'julia-mode-hook #'julia-formatter-mode))
+#+end_src
+
+*** LSP
+#+begin_src emacs-lisp
+(after! lsp-julia
   (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
 
 (add-hook! 'julia-mode-hook #'lsp-mode)
+#+end_src
+
+*** Snail
+#+begin_src emacs-lisp
+(setq julia-snail-extensions '(repl-history formatter ob-julia))
 #+end_src
 
 ** LaTeX
@@ -970,14 +988,14 @@ Also make some additions/modifications to the maths symbol alist
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! LaTeX-mode
+(after! cdlatex
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
-          ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
+          ("equation" "\\begin{equation}\n    ?\n\\end{equation}" nil) ; This might not work
           ("bmatrix" "\\begin{equation*}\n    ?\n    \\begin{bmatrix}\n        \n    \\end{bmatrix}\n\\end{equation*}" nil)
           ("vmatrix" "\\begin{equation*}\n    ?\n    \\begin{vmatrix}\n        \n    \\end{vmatrix}\n\\end{equation*}" nil)
           ("pmatrix" "\\begin{equation*}\n    ?\n    \\begin{pmatrix}\n        \n    \\end{pmatrix}\n\\end{equation*}" nil)
-          ("split" "\\begin{equation} \\label{?}\n    \\begin{split}\n        \n    \\end{split}\n\\end{equation}" nil)
+          ("split" "\\begin{equation}\n    \n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation}" nil)
           ("non-numbered split" "\\begin{equation*}\n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation*}" nil)))
   (setq cdlatex-command-alist
         '(("neq" "Insert non-numbered equation env" "" cdlatex-environment ("non-numbered equation") t nil)
@@ -1090,6 +1108,46 @@ Use the zotra-server backend
 #+end_src
 
 ** LSP
+*** TODO DAP
+Enable the DAP debugger
+
+#+begin_src emacs-lisp
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
+
+(map! :after dap-mode
+      :map dap-mode-map
+      :leader
+      :prefix ("d" . "dap")
+
+      ;; basics
+      :desc "dap next"          "n" #'dap-next
+      :desc "dap step in"       "i" #'dap-step-in
+      :desc "dap step out"      "o" #'dap-step-out
+      :desc "dap continue"      "c" #'dap-continue
+      :desc "dap hydra"         "h" #'dap-hydra
+      :desc "dap debug restart" "r" #'dap-debug-restart
+      :desc "dap debug"         "s" #'dap-debug
+
+      ;; debug
+      :prefix ("dd" . "Debug")
+      :desc "dap debug recent"  "r" #'dap-debug-recent
+      :desc "dap debug last"    "l" #'dap-debug-last
+
+      ;; eval
+      :prefix ("de" . "Eval")
+      :desc "eval"                "e" #'dap-eval
+      :desc "eval region"         "r" #'dap-eval-region
+      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+      :desc "add expression"      "a" #'dap-ui-expressions-add
+      :desc "remove expression"   "d" #'dap-ui-expressions-remove
+
+      :prefix ("db" . "Breakpoint")
+      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
+#+end_src
 *** General
 Configure general settings for LSP
 
@@ -1156,56 +1214,65 @@ Configure lsp-ui settings
 ;;       "I" #'lsp-ui-imenu--refresh)
 #+end_src
 
-*** TODO DAP
-Enable the DAP debugger
+*** Org
+Enable LSP in org edit buffer special for the following languages:
+- python
+- bash
+- julia
 
 #+begin_src emacs-lisp
-(after! dap-mode
-  (setq dap-python-debugger 'debugpy))
+(cl-defmacro lsp-org-babel-enable (lang)
+  "Support LANG in org source code block."
+  (setq centaur-lsp 'lsp-mode)
+  (cl-check-type lang string)
+  (let* ((edit-pre (intern (format "org-babel-edit-prep:%s" lang)))
+         (intern-pre (intern (format "lsp--%s" (symbol-name edit-pre)))))
+    `(progn
+       (defun ,intern-pre (info)
+         (let ((file-name (->> info caddr (alist-get :file))))
+           (unless file-name
+             (setq file-name (make-temp-file "babel-lsp-")))
+           (setq buffer-file-name file-name)
+           (lsp-deferred)))
+       (put ',intern-pre 'function-documentation
+            (format "Enable lsp-mode in the buffer of org source block (%s)."
+                    (upcase ,lang)))
+       (if (fboundp ',edit-pre)
+           (advice-add ',edit-pre :after ',intern-pre)
+         (progn
+           (defun ,edit-pre (info)
+             (,intern-pre info))
+           (put ',edit-pre 'function-documentation
+                (format "Prepare local buffer environment for org source block (%s)."
+                        (upcase ,lang))))))))
 
-(map! :after dap-mode
-      :map dap-mode-map
-      :leader
-      :prefix ("d" . "dap")
+(defvar org-babel-lang-list
+  '("python" "bash" "julia"))
 
-      ;; basics
-      :desc "dap next"          "n" #'dap-next
-      :desc "dap step in"       "i" #'dap-step-in
-      :desc "dap step out"      "o" #'dap-step-out
-      :desc "dap continue"      "c" #'dap-continue
-      :desc "dap hydra"         "h" #'dap-hydra
-      :desc "dap debug restart" "r" #'dap-debug-restart
-      :desc "dap debug"         "s" #'dap-debug
-
-      ;; debug
-      :prefix ("dd" . "Debug")
-      :desc "dap debug recent"  "r" #'dap-debug-recent
-      :desc "dap debug last"    "l" #'dap-debug-last
-
-      ;; eval
-      :prefix ("de" . "Eval")
-      :desc "eval"                "e" #'dap-eval
-      :desc "eval region"         "r" #'dap-eval-region
-      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
-      :desc "add expression"      "a" #'dap-ui-expressions-add
-      :desc "remove expression"   "d" #'dap-ui-expressions-remove
-
-      :prefix ("db" . "Breakpoint")
-      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
-      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
-      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
-      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
+(dolist (lang org-babel-lang-list)
+  (eval `(lsp-org-babel-enable ,lang)))
 #+end_src
 
 ** Markdown
-*** Github API rate limit
+*** Grip mode
 Github has a rate limit, limiting how long grip-mode will work for. The following should get around this. This also uses a github authentication token and parses it from authinfo so it doesn't get made public when I publish this to github.
 
 #+begin_src emacs-lisp
-(after! grip-mode
+(use-package! grip-mode
+  :defer t
+  :init
   (let ((credential (auth-source-user-and-password "api.github.com")))
     (setq grip-github-user (car credential)
-          grip-github-password (cadr credential))))
+          grip-github-password (cadr credential)))
+
+  (setq grip-sleep-time 2
+        grip-preview-use-webkit nil
+        grip-url-browser "firefox")
+
+  (when (string= (system-name) "arch")
+    (setq grip-binary-path "/usr/bin/grip"))
+  (when (string= (system-name) "maccie")
+    (setq grip-binary-path "/opt/homebrew/bin/grip")))
 #+end_src
 
 *** Line Wrapping
@@ -1213,21 +1280,6 @@ Use visual line wrapping
 
 #+begin_src emacs-lisp
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
-#+end_src
-
-*** Live Preview
-Live preview markdown files
-
-#+begin_src emacs-lisp
-(after! gfm-mode
-  ;; (add-hook! 'markdown-mode-hook #'grip-mode)
-  (setq grip-sleep-time 2
-        grip-preview-use-webkit nil
-        grip-url-browser "firefox")
-  (when (string= (system-name) "arch")
-    (setq grip-binary-path "/usr/bin/grip"))
-  (when (string= (system-name) "maccie")
-    (setq grip-binary-path "/opt/homebrew/bin/grip")))
 #+end_src
 
 *** Markdown Style Customisation
@@ -1287,8 +1339,8 @@ Mirror the style that markdown renders in
 Disable prettify-symbols in python modes
 
 #+begin_src emacs-lisp
-;; (after! python
-;;   (setq prettify-symbols-mode nil))
+(after! python-mode
+  (setq prettify-symbols-mode nil))
 #+end_src
 
 *** Formatters and Linters
@@ -1508,7 +1560,9 @@ Toggle pretty entities in org mode when the cursor moves over them
   (require 'jupyter-org-client)
 
   (setq org-src-fontify-natively t
-        org-src-tab-acts-natively t))
+        org-src-tab-acts-natively t
+        org-src-window-setup 'other-window)
+  (set-popup-rule! "^\\*Org Src" :ignore t))
 #+end_src
 
 Specify shortcuts for src blocks with specific languages
@@ -1629,6 +1683,7 @@ Enable Jupyter support in org-mode using the Jupyter package
 
 #+begin_src emacs-lisp
 (after! org
+  (jupyter-org-interaction-mode -1)
   (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
                                                        (:session . "py")))
   (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
@@ -1637,6 +1692,7 @@ Enable Jupyter support in org-mode using the Jupyter package
                                                            (python . t)
                                                            (jupyter . t)))
   (setq jupyter-org-queue-requests t))
+
 
 (map! :map org-mode-map
       :after org
@@ -1811,6 +1867,19 @@ Add a background to images with a transparent background so they are legible wit
   (advice-add 'org--create-inline-image
               :filter-return #'org--create-inline-image-advice))
 #+end_src
+** TODO Journal
+
+#+begin_src emacs-lisp
+(use-package! org-journal
+  :defer t
+  :config
+  (setq org-journal-carryover-delete-empty-journal "ask"
+        org-journal-enable-agenda-integration t
+        org-journal-file-format "%Y%m"
+        org-journal-file-type 'monthly
+        org-journal-follow-mode t))
+  ;; (setq org-capture-templates '(("j" "Journal entry" plain))))
+#+end_src
 
 ** Keybindings
 Change some of the org keybindings
@@ -1838,7 +1907,7 @@ Enable cdlatex by default and edit an environment after inserting one.
 #+begin_src emacs-lisp
 (after! org
   (setq org-startup-with-latex-preview t)
-  (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
+  (add-hook! 'org-mode-hook #'turn-on-org-cdlatex)
 
   (defadvice! org-edit-latex-emv-after-insert ()
     :after #'org-cdlatex-environment-indent
@@ -1847,24 +1916,29 @@ Enable cdlatex by default and edit an environment after inserting one.
 
 *** TODO In-line Fragments
 Use org-fragtog mode to automatically generate latex fragments
-For some reason this doesn't work on my mac, so I will only enable this for my home computer
 
 Change Latex fragment size
 
 #+begin_src emacs-lisp
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
 
+(after! org
+  (plist-put org-format-latex-options :scale 2.0)
+  (plist-put org-format-latex-options :html-scale 1.0)
+  ;; (plist-put org-format-latex-options :foreground "white")
+  (plist-put org-format-latex-options :background "Transparent")
+  (plist-put org-format-latex-options :matchers '("begin" "$1" "$" "$$" "\\(" "\\[")))
+;; '(org-format-latex-options
+;;   (quote
+;;    (:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
+;;     ("begin" "$1" "$" "$$" "\\(" "\\[")))))
+
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
-;;   (plist-put org-format-latex-options :background "Transparent" :scale 1.5 text-scale-mode-amount)
+;;   (plist-put org-format-latex-options :scale text-scale-mode-amount)
 ;;   (org-latex-preview '(16)))
-;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-(after! org
-  '(org-format-latex-options
-    (quote
-     (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
-      ("begin" "$1" "$" "$$" "\\(" "\\[")))))
+;; (add-hook! 'text-scale-mode-hook #'update-org-latex-fragments)
 #+end_src
 
 *** Org Code Blocks
@@ -2201,31 +2275,35 @@ Make all the things look pretty
   (setq +org-pretty-mode t))
 #+end_src
 
-** TODO Roam
+** Roam
 
 #+begin_src emacs-lisp
-(after! org-roam-mode
-  (setq org-roam-directory "~/Documents/org/roam")
-  (org-roam-db-autosync-mode))
+(use-package! org-roam
+  :custom
+  (org-roam-directory "~/Documents/org/roam")
+  (org-roam-db-autosync-mode t)
+  (org-roam-completion-everywhere t))
 #+end_src
 
-org-roam-ui
+*** Roam UI
 
 #+begin_src emacs-lisp
 (use-package! websocket
-    :after org-roam)
+  :after org-roam)
 
 (use-package! org-roam-ui
-    :after org-mode
-    ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-    ;; a hookable mode anymore, you're advised to pick something yourself
-    ;; if you don't care about startup time, use
-    ;; :hook (after-init . org-roam-ui-mode)
-    :config
-    (setq org-roam-ui-sync-theme t
-          org-roam-ui-follow t
-          org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
+  :after org-roam
+  ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;; a hookable mode anymore, you're advised to pick something yourself
+  ;; if you don't care about startup time, use
+  ;; :hook (after-init . org-roam-ui-mode)
+  :init
+  (setq org-roam-ui-browser-function #'browse-url-firefox)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t
+        org-roam-ui-update-on-save t
+        org-roam-ui-open-on-start t))
 #+end_src
 
 ** TODO Snippet Helpers

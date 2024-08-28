@@ -201,8 +201,9 @@
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
        (org               ; organize your plain life in plain text
-        +brain
+        +contacts
         +dragndrop
+        +crypt
         +gnuplot
         +journal
         +jupyter
@@ -210,7 +211,6 @@
         +pandoc
         +present
         +pretty
-        ;; +fragtog
         +roam2)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more

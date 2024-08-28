@@ -1,7 +1,9 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-(after! browse-url
-  (setq browse-url-generic-program "firefox"))
+(setq browse-url-browser-function 'browse-url-firefox
+      browse-url-generic-program "firefox")
+
+(add-transient-hook! 'focus-out-hook (atomic-chrome-start-server))
 
 (setq chatgpt-shell-openai-key
       (lambda ()
@@ -89,6 +91,8 @@
 
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
+
+(pixel-scroll-precision-mode)
 
 (use-package! gptel
   :commands gptel gptel-menu gptel-mode gptel-send gptel-set-tpic
@@ -343,8 +347,8 @@
   (setq centaur-tabs-set-icons t
         ;; centaur-tabs-style "wave"
         ;; centaur-tabs-set-modified-marker t
-        centaur-tabs-modified-marker "o"
-        centaur-tabs-close-button "×"
+        ;; centaur-tabs-modified-marker "o"
+        ;; centaur-tabs-close-button "×"
         centaur-tabs-set-bar 'left
         centaur-tabs-gray-out-icons 'buffer))
   ;; (centaur-tabs-change-fonts "P22 Underground Book" 160))
@@ -494,29 +498,30 @@
   :interpreter
   ("julia" . julia-mode))
 
-(use-package! lsp-julia
-  :init
-  (setq lsp-julia-package-dir nil
-        lsp-julia-flags `("-J~/.julia/compiled/v1.10/ite7n_ylCQA.so"))
-  (require 'lsp-julia)
-  :config
+(after! julia-mode
+  (load-file "~/.config/emacs/.local/straight/repos/julia-formatter.el/julia-formatter.el")
+  (add-hook 'julia-mode-hook #'julia-formatter-mode))
+
+(after! lsp-julia
   (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
 
 (add-hook! 'julia-mode-hook #'lsp-mode)
+
+(setq julia-snail-extensions '(repl-history formatter ob-julia))
 
 (setq! bibtex-completion-bibliography '("~/Documents/warwick/thesus/references.bib"))
 
 (eval-after-load 'latex
                  '(define-key LaTeX-mode-map [(tab)] 'cdlatex-tab))
 
-(after! LaTeX-mode
+(after! cdlatex
   (setq cdlatex-env-alist
         '(("non-numbered equation" "\\begin{equation*}\n    ?\n\\end{equation*}" nil)
-          ("equation" "\\begin{equation} \\label{?}\n    \n\\end{equation}" nil) ; This might not work
+          ("equation" "\\begin{equation}\n    ?\n\\end{equation}" nil) ; This might not work
           ("bmatrix" "\\begin{equation*}\n    ?\n    \\begin{bmatrix}\n        \n    \\end{bmatrix}\n\\end{equation*}" nil)
           ("vmatrix" "\\begin{equation*}\n    ?\n    \\begin{vmatrix}\n        \n    \\end{vmatrix}\n\\end{equation*}" nil)
           ("pmatrix" "\\begin{equation*}\n    ?\n    \\begin{pmatrix}\n        \n    \\end{pmatrix}\n\\end{equation*}" nil)
-          ("split" "\\begin{equation} \\label{?}\n    \\begin{split}\n        \n    \\end{split}\n\\end{equation}" nil)
+          ("split" "\\begin{equation}\n    \n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation}" nil)
           ("non-numbered split" "\\begin{equation*}\n    \\begin{split}\n        ?\n    \\end{split}\n\\end{equation*}" nil)))
   (setq cdlatex-command-alist
         '(("neq" "Insert non-numbered equation env" "" cdlatex-environment ("non-numbered equation") t nil)
@@ -597,6 +602,42 @@
   (setq zotra-backend 'zotra-server)
   (setq zotra-local-server-directory "~/Applications/zotra-server/"))
 
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
+
+(map! :after dap-mode
+      :map dap-mode-map
+      :leader
+      :prefix ("d" . "dap")
+
+      ;; basics
+      :desc "dap next"          "n" #'dap-next
+      :desc "dap step in"       "i" #'dap-step-in
+      :desc "dap step out"      "o" #'dap-step-out
+      :desc "dap continue"      "c" #'dap-continue
+      :desc "dap hydra"         "h" #'dap-hydra
+      :desc "dap debug restart" "r" #'dap-debug-restart
+      :desc "dap debug"         "s" #'dap-debug
+
+      ;; debug
+      :prefix ("dd" . "Debug")
+      :desc "dap debug recent"  "r" #'dap-debug-recent
+      :desc "dap debug last"    "l" #'dap-debug-last
+
+      ;; eval
+      :prefix ("de" . "Eval")
+      :desc "eval"                "e" #'dap-eval
+      :desc "eval region"         "r" #'dap-eval-region
+      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+      :desc "add expression"      "a" #'dap-ui-expressions-add
+      :desc "remove expression"   "d" #'dap-ui-expressions-remove
+
+      :prefix ("db" . "Breakpoint")
+      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
+
 (after! lsp-mode
   (setq lsp-enable-symbol-highlighting t
         lsp-lens-enable t
@@ -653,58 +694,54 @@
 ;;       "i" #'lsp-ui-imenu
 ;;       "I" #'lsp-ui-imenu--refresh)
 
-(after! dap-mode
-  (setq dap-python-debugger 'debugpy))
+(cl-defmacro lsp-org-babel-enable (lang)
+  "Support LANG in org source code block."
+  (setq centaur-lsp 'lsp-mode)
+  (cl-check-type lang string)
+  (let* ((edit-pre (intern (format "org-babel-edit-prep:%s" lang)))
+         (intern-pre (intern (format "lsp--%s" (symbol-name edit-pre)))))
+    `(progn
+       (defun ,intern-pre (info)
+         (let ((file-name (->> info caddr (alist-get :file))))
+           (unless file-name
+             (setq file-name (make-temp-file "babel-lsp-")))
+           (setq buffer-file-name file-name)
+           (lsp-deferred)))
+       (put ',intern-pre 'function-documentation
+            (format "Enable lsp-mode in the buffer of org source block (%s)."
+                    (upcase ,lang)))
+       (if (fboundp ',edit-pre)
+           (advice-add ',edit-pre :after ',intern-pre)
+         (progn
+           (defun ,edit-pre (info)
+             (,intern-pre info))
+           (put ',edit-pre 'function-documentation
+                (format "Prepare local buffer environment for org source block (%s)."
+                        (upcase ,lang))))))))
 
-(map! :after dap-mode
-      :map dap-mode-map
-      :leader
-      :prefix ("d" . "dap")
+(defvar org-babel-lang-list
+  '("python" "bash" "julia"))
 
-      ;; basics
-      :desc "dap next"          "n" #'dap-next
-      :desc "dap step in"       "i" #'dap-step-in
-      :desc "dap step out"      "o" #'dap-step-out
-      :desc "dap continue"      "c" #'dap-continue
-      :desc "dap hydra"         "h" #'dap-hydra
-      :desc "dap debug restart" "r" #'dap-debug-restart
-      :desc "dap debug"         "s" #'dap-debug
+(dolist (lang org-babel-lang-list)
+  (eval `(lsp-org-babel-enable ,lang)))
 
-      ;; debug
-      :prefix ("dd" . "Debug")
-      :desc "dap debug recent"  "r" #'dap-debug-recent
-      :desc "dap debug last"    "l" #'dap-debug-last
-
-      ;; eval
-      :prefix ("de" . "Eval")
-      :desc "eval"                "e" #'dap-eval
-      :desc "eval region"         "r" #'dap-eval-region
-      :desc "eval thing at point" "s" #'dap-eval-thing-at-point
-      :desc "add expression"      "a" #'dap-ui-expressions-add
-      :desc "remove expression"   "d" #'dap-ui-expressions-remove
-
-      :prefix ("db" . "Breakpoint")
-      :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
-      :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
-      :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
-      :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
-
-(after! grip-mode
+(use-package! grip-mode
+  :defer t
+  :init
   (let ((credential (auth-source-user-and-password "api.github.com")))
     (setq grip-github-user (car credential)
-          grip-github-password (cadr credential))))
+          grip-github-password (cadr credential)))
 
-(add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
-
-(after! gfm-mode
-  ;; (add-hook! 'markdown-mode-hook #'grip-mode)
   (setq grip-sleep-time 2
         grip-preview-use-webkit nil
         grip-url-browser "firefox")
+
   (when (string= (system-name) "arch")
     (setq grip-binary-path "/usr/bin/grip"))
   (when (string= (system-name) "maccie")
     (setq grip-binary-path "/opt/homebrew/bin/grip")))
+
+(add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
 (custom-set-faces!
   '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
@@ -751,8 +788,8 @@
 ;;         ;; Create a daily note
 ;;         :desc "daily note" #'obsidian-daily-note)
 
-;; (after! python
-;;   (setq prettify-symbols-mode nil))
+(after! python-mode
+  (setq prettify-symbols-mode nil))
 
 ;; (use-package! lsp-mode
 ;;   :hook (python-mode . lsp-deferred)
@@ -912,7 +949,9 @@
   (require 'jupyter-org-client)
 
   (setq org-src-fontify-natively t
-        org-src-tab-acts-natively t))
+        org-src-tab-acts-natively t
+        org-src-window-setup 'other-window)
+  (set-popup-rule! "^\\*Org Src" :ignore t))
 
 (after! org
   (setq org-structure-template-alist
@@ -1003,6 +1042,7 @@
                        (company-mode +1)))))
 
 (after! org
+  (jupyter-org-interaction-mode -1)
   (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
                                                        (:session . "py")))
   (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
@@ -1011,6 +1051,7 @@
                                                            (python . t)
                                                            (jupyter . t)))
   (setq jupyter-org-queue-requests t))
+
 
 (map! :map org-mode-map
       :after org
@@ -1132,6 +1173,16 @@
   (advice-add 'org--create-inline-image
               :filter-return #'org--create-inline-image-advice))
 
+(use-package! org-journal
+  :defer t
+  :config
+  (setq org-journal-carryover-delete-empty-journal "ask"
+        org-journal-enable-agenda-integration t
+        org-journal-file-format "%Y%m"
+        org-journal-file-type 'monthly
+        org-journal-follow-mode t))
+  ;; (setq org-capture-templates '(("j" "Journal entry" plain))))
+
 ;; (defun org-insert-newline-heading ()
 ;;   ('newline)
 ;;   ('org-insert-heading))
@@ -1148,7 +1199,7 @@
 
 (after! org
   (setq org-startup-with-latex-preview t)
-  (add-hook! 'org-mode-hook 'turn-on-org-cdlatex)
+  (add-hook! 'org-mode-hook #'turn-on-org-cdlatex)
 
   (defadvice! org-edit-latex-emv-after-insert ()
     :after #'org-cdlatex-environment-indent
@@ -1156,17 +1207,23 @@
 
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
 
+(after! org
+  (plist-put org-format-latex-options :scale 2.0)
+  (plist-put org-format-latex-options :html-scale 1.0)
+  ;; (plist-put org-format-latex-options :foreground "white")
+  (plist-put org-format-latex-options :background "Transparent")
+  (plist-put org-format-latex-options :matchers '("begin" "$1" "$" "$$" "\\(" "\\[")))
+;; '(org-format-latex-options
+;;   (quote
+;;    (:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
+;;     ("begin" "$1" "$" "$$" "\\(" "\\[")))))
+
 ;; (defun update-org-latex-fragments ()
 ;;   (org-latex-preview '(64))
-;;   (plist-put org-format-latex-options :background "Transparent" :scale 1.5 text-scale-mode-amount)
+;;   (plist-put org-format-latex-options :scale text-scale-mode-amount)
 ;;   (org-latex-preview '(16)))
-;; (add-hook 'text-scale-mode-hook 'update-org-latex-fragments)
 
-(after! org
-  '(org-format-latex-options
-    (quote
-     (:foreground default :background default :scale 1.5 :html-foreground "Black" :html-background "Transparent" :html-scale 1 :matchers
-      ("begin" "$1" "$" "$$" "\\(" "\\[")))))
+;; (add-hook! 'text-scale-mode-hook #'update-org-latex-fragments)
 
 (use-package! engrave-faces-latex
   :after ox-latex
@@ -1443,24 +1500,28 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (setq org-pretty-entities t)
   (setq +org-pretty-mode t))
 
-(after! org-roam-mode
-  (setq org-roam-directory "~/Documents/org/roam")
-  (org-roam-db-autosync-mode))
+(use-package! org-roam
+  :custom
+  (org-roam-directory "~/Documents/org/roam")
+  (org-roam-db-autosync-mode t)
+  (org-roam-completion-everywhere t))
 
 (use-package! websocket
-    :after org-roam)
+  :after org-roam)
 
 (use-package! org-roam-ui
-    :after org-mode
-    ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-    ;; a hookable mode anymore, you're advised to pick something yourself
-    ;; if you don't care about startup time, use
-    ;; :hook (after-init . org-roam-ui-mode)
-    :config
-    (setq org-roam-ui-sync-theme t
-          org-roam-ui-follow t
-          org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
+  :after org-roam
+  ;; normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;; a hookable mode anymore, you're advised to pick something yourself
+  ;; if you don't care about startup time, use
+  ;; :hook (after-init . org-roam-ui-mode)
+  :init
+  (setq org-roam-ui-browser-function #'browse-url-firefox)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t
+        org-roam-ui-update-on-save t
+        org-roam-ui-open-on-start t))
 
 (after! org-mode
   (defun +yas/org-src-header-p ()
