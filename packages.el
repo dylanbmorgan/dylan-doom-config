@@ -55,18 +55,23 @@
 (package! company-org-block)
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
+(package! copilot-chat
+  :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
 (package! dall-e-shell)
 (package! ellama)
+(package! emacsql :pin "491105a")
 (package! engrave-faces)
 ;; (package! fortpy)
 (package! gptel)
+(package! impatient-mode)
+(package! indent-bars)
 (package! jinx)
-(package! julia-formatter
-  :recipe (:host codeberg :repo "FelipeLema/julia-formatter.el"
-           :files ( "julia-formatter.el" ;; main script executed by Emacs
-                    "toml-respects-json.el" ;; script to parse format config toml files
-                    "formatter_service.jl" ;; script executed by Julia
-                    "Manifest.toml" "Project.toml"))) ;; project files
+;; (package! julia-formatter
+;;   :recipe (:host codeberg :repo "FelipeLema/julia-formatter.el"
+;;            :files ( "julia-formatter.el" ;; main script executed by Emacs
+;;                     "toml-respects-json.el" ;; script to parse format config toml files
+;;                     "formatter_service.jl" ;; script executed by Julia
+;;                     "Manifest.toml" "Project.toml"))) ;; project files
 (package! languagetool)
 (package! live-py-mode)
 ;; (package! lsp-julia)
@@ -77,6 +82,8 @@
 (package! org-auto-tangle)
 ;; (package! org-edit-latex)
 (package! org-fragtog)
+(package! orgnote
+  :recipe (:host github :repo "artawower/orgnote.el"))
 (package! org-pandoc-import
   :recipe (:host github
            :repo "tecosaur/org-pandoc-import"
@@ -85,9 +92,16 @@
 (unpin! org-roam)
 (package! org-roam-ui)
 (package! org-special-block-extras)
+(package! org-super-agenda)
 (package! ox-gfm)
+(package! ox-pluto
+  :recipe (:host github
+           :repo "tecosaur/ox-pluto"))
 (package! poetry)
 (package! pov-mode)
+(package! screenshot
+  :recipe (:host github
+           :repo "tecosaur/screenshot"))
 (package! systemd)
 (package! vterm-toggle)
 (package! zotra)

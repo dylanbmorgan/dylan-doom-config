@@ -1,7 +1,9 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-(setq browse-url-browser-function 'browse-url-firefox
-      browse-url-generic-program "firefox")
+;; (setq browse-url-browser-function 'browse-url-firefox
+;;       browse-url-generic-program "firefox")
+
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
 
 (add-transient-hook! 'focus-out-hook (atomic-chrome-start-server))
 
@@ -54,9 +56,7 @@
 (setq eros-eval-result-prefix "⟹ ") ; default =>
 
 (after! evil
-  (setq evil-ex-substitute-global t     ; I like my s/../.. to by global by default
-        evil-move-cursor-back nil       ; Don't move the block cursor when toggling insert mode
-        evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
+  (setq evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
 
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
@@ -73,7 +73,7 @@
       password-cache-expiry 300
       scroll-preserve-screen-position 'always
       scroll-margin 4)
-      ;; debug-on-error t)
+;; debug-on-error t)
 
 (global-subword-mode t)
 
@@ -85,9 +85,6 @@
 ;; TODO
 ;; (map! which-key-mode-map
 ;;       "DEL" #'which-key-undo)
-
-;; (after! highlight-indent-guides
-;;   (highlight-indent-guides-auto-set-faces))
 
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
@@ -164,12 +161,25 @@
   (push 'org-inline-src-block
         (alist-get 'org-mode jinx-exclude-faces)))
 
+(map! :after jinx
+      :map jinx-overlay-map
+      "M-o" #'jinx-correct
+      "M-S-o" #'jinx-correct-all)
+
 ;;   ;; Take over the relevant bindings.
 ;;   (after! ispell
 ;;     (global-set-key [remap ispell-word] #'jinx-correct))
 ;;   (after! evil-commands
 ;;     (global-set-key [remap evil-next-flyspell-error] #'jinx-next)
 ;;     (global-set-key [remap evil-prev-flyspell-error] #'jinx-previous))
+
+;; (unless (string= "enabled\n" (shell-command-to-string "systemctl --user is-enabled emacs.service"))
+;;   (warn! "Emacsclient service is not enabled."))
+
+(when (daemonp)
+  (add-hook! 'server-after-make-frame-hook
+    (unless (string-match-p "\\*draft\\|\\*stdin\\|emacs-everywhere" (buffer-name))
+      (switch-to-buffer +doom-dashboard-name))))
 
 (use-package! treemacs
   :defer t
@@ -229,7 +239,8 @@
   (setenv "SHELL" "/bin/bash")
   (setq tramp-shell-prompt-pattern "\\(?:^\\|\n\\|\x0d\\)[^]#$%>\n]*#?[]#$%>] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")) ;; default + 
 
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+;; (setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(setq browse-url-browser-function 'browse-url-firefox)
 
 ;; (setq moom-user-margin '(50 50 50 50)) ; {top, bottom, left, right}
 ;; (moom-mode 1)
@@ -272,10 +283,20 @@
  "<<" ">>"
  :actions '(insert))
 
-(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 16)
-      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 22))
+(sp-local-pair
+ '(org-mode)
+ "$$" "$$"
+ :actions '(insert))
+
+(when (string= (system-name) "maccie")
+  (setq doom-font (font-spec :family "Fira Code" :size 15)
+        doom-big-font (font-spec :family "Fira Code" :size 20)))
       ;; doom-variable-pitch-font (font-spec :family "InputMonoNarrow Nerd Font" :size 18))
       ;; doom-serif-font (font-spec :family "Droid*Sans*M*" :size 16 :weight 'light))
+
+(when (string= (system-name) "arch")
+  (setq doom-font (font-spec :family "Fira Code" :size 16)
+        doom-big-font (font-spec :family "Fira Code" :size 22)))
 
 (after! text-mode
   (set-input-method 'TeX))
@@ -400,6 +421,18 @@
 (map! :leader
       :desc "Toggle Copilot" "c g" #'copilot-mode)
 
+(use-package! indent-bars
+  :hook ((prog-mode python-mode sh-mode f90-mode julia-mode yaml-mode) . indent-bars-mode)
+  :custom
+  (indent-bars-treesit-support t)
+  (indent-bars-color '(highlight :face-bg t :blend 0.2))
+  (indent-bars-pattern ".")
+  (indent-bars-pad-frac 0.1)
+  (indent-bars-highlight-current-depth '(:blend 0.55)))
+
+(map! :leader
+      :desc "Indent bars" "t i" #'indent-bars-mode)
+
 (add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
 (add-hook! 'sh-mode-hook #'rainbow-delimiters-mode)
 
@@ -488,9 +521,6 @@
 (use-package! lsp-mode
   :hook (f90-mode . lsp-deferred))
 
-;; (use-package! eglot-jl
-;;   :defer  t)
-
 (use-package! julia-mode
   :defer t
   :init
@@ -498,9 +528,8 @@
   :interpreter
   ("julia" . julia-mode))
 
-(after! julia-mode
-  (load-file "~/.config/emacs/.local/straight/repos/julia-formatter.el/julia-formatter.el")
-  (add-hook 'julia-mode-hook #'julia-formatter-mode))
+(after! julia
+  (add-hook! 'before-save-hook #'julia-snail/formatter-format-buffer))
 
 (after! lsp-julia
   (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
@@ -508,6 +537,18 @@
 (add-hook! 'julia-mode-hook #'lsp-mode)
 
 (setq julia-snail-extensions '(repl-history formatter ob-julia))
+
+(map! :after julia-mode
+      :map julia-mode-map
+      :localleader
+      ;; Rebind julia-snail to "m" to make it easier to jump between the REPL and .jl file
+      :desc "" "'" nil
+      :desc "Julia Snail" "m" #'julia-snail
+      :desc "Format buffer" "f" #'julia-snail/formatter-format-buffer
+      :desc "Format region" "F" #'julia-snail/formatter-format-region
+      :desc "Paste REPL history" "p" #'julia-snail/repl-history-yank
+      :desc "Show REPL history" "b" #'julia-snail/repl-history-buffer
+      :desc "Search and paste REPL history" "s" #'julia-snail/repl-history-search-and-yank)
 
 (setq! bibtex-completion-bibliography '("~/Documents/warwick/thesus/references.bib"))
 
@@ -555,9 +596,16 @@
 
 (add-to-list 'company-backends 'company-math-symbols-unicode)
 
-(setq-default TeX-master nil
-              TeX-command "latexmk"
-              TeX-command-extra-options "-lualatex -pdflua -c")
+(setenv "PATH" (concat (getenv "PATH") ":/usr/bin/"))
+(setq exec-path (append exec-path '("/usr/bin/")))
+
+(setq TeX-master nil
+      TeX-show-compilation nil)
+
+(setq TeX-command-default "LaTeXMk"
+      TeX-command "latexmk"
+      TeX-command-extra-options "-bibtex -pdflua -ps-"
+      +latex-viewers '(pdf-tools skim evince sumatrapdf zathura okular))
 
 ;; (use-package! lsp-ltex
 ;;   ;; :hook (text-mode . (lambda ()
@@ -590,17 +638,30 @@
   (with-eval-after-load "bibtex"
     (add-hook 'bibtex-mode-hook 'lsp)))
 
+(map! :after LaTeX-mode
+      :map LaTeX-mode-map
+      :localleader
+      :desc "" "P" nil
+      :desc "Unpreview" "P" #'preview-clearout-buffer)
+
 (after! LaTeX-mode
   (setq reftex-default-bibliography "~/Documents/warwick/thesus/references.bib"))
 
 (map! :map reftex-mode-map
       :localleader
       :desc "reftex-cite" "r" #'reftex-citation
+      :desc "reftex-reference" "R" #'reftex-reference
       :desc "reftex-label" "l" #'reftex-label)
 
-(after! LaTeX-mode
+(use-package! zotra
+  :defer t
+  :config
   (setq zotra-backend 'zotra-server)
   (setq zotra-local-server-directory "~/Applications/zotra-server/"))
+
+(require 'zotra)
+(setq zotra-backend 'zotra-server)
+(setq zotra-local-server-directory "~/Applications/zotra-server/")
 
 (after! dap-mode
   (setq dap-python-debugger 'debugpy))
@@ -733,8 +794,8 @@
           grip-github-password (cadr credential)))
 
   (setq grip-sleep-time 2
-        grip-preview-use-webkit nil
-        grip-url-browser "firefox")
+        grip-preview-use-webkit t
+        grip-url-browser nil)
 
   (when (string= (system-name) "arch")
     (setq grip-binary-path "/usr/bin/grip"))
@@ -744,11 +805,11 @@
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 
 (custom-set-faces!
-  '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
-  '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-1 :height 1.5 :weight extra-bold :inherit markdown-header-face)
+  '(markdown-header-face-2 :height 1.25 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-3 :height 1.15 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
-  '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
+  '(markdown-header-face-5 :height 0.85 :weight bold       :inherit markdown-header-face)
   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
 
 ;; (use-package! obsidian
@@ -908,30 +969,30 @@
                                      :target nil
                                      :cwd nil)))
 
-(defun insert-auto-tangle-tag ()
-  "Insert auto-tangle tag in a literate config."
-  (interactive)
-  (evil-org-open-below 1)
-  (insert "#+auto_tangle: t ")
-  (evil-force-normal-state))
+(use-package! org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
 
-(map! :map org-mode-map
-      :after org
-      :localleader
-      :prefix ("k" . "org header")
-      :desc "auto tangle tag"
-      "a" 'insert-auto-tangle-tag)
+(after! org
+  (setq org-agenda-files '("~/Documents/org/roam/*.org")))
 
 (use-package! org-appear
   :after org
   :hook (org-mode . org-appear-mode)
   :config
   (setq org-appear-autoemphasis t)
-  (setq org-appear-autolinks t
+  (setq org-appear-autolinks nil
         org-appear-autosubmarkers t
         org-appear-autoentities t
         org-appear-autokeywords t
         org-appear-inside-latex t))
+
+(after! org
+  (setq org-attach-id-dir "~/Documents/org/.attach/"
+        org-attach-dir-relative t
+        org-attach-method 'lns
+        org-attach-archive-delete 'query
+        org-attach-auto-tag "attach"))
 
 (after! org
   (require 'ob-fortran)
@@ -978,13 +1039,6 @@
       :after org
       :localleader
       :desc "org-insert-template" "w" #'org-insert-structure-template)
-
-(map! :nvi "C-n" nil) ; unbind evil-paste-pop and
-(map! :nvi "C-p" nil) ; evil-paste-pop-next
-(map! :map org-mode-map
-      :after org
-      "C-n" #'org-next-block
-      "C-p" #'org-previous-block)
 
 (map! :map org-mode-map
       :after org
@@ -1040,38 +1094,6 @@
   :hook ((org-mode . (lambda ()
                        (setq-local company-backends '(company-org-block))
                        (company-mode +1)))))
-
-(after! org
-  (jupyter-org-interaction-mode -1)
-  (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
-                                                       (:session . "py")))
-  (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
-                                                           (bash . t)
-                                                           (julia . t)
-                                                           (python . t)
-                                                           (jupyter . t)))
-  (setq jupyter-org-queue-requests t))
-
-
-(map! :map org-mode-map
-      :after org
-      :localleader
-      :prefix ("j"" . "jupyter)
-      :desc "Execute and next block" "b" #'jupyter-org-execute-and-next-block
-      :desc "Clone block" "c" #'jupyter-org-clone-block
-      :desc "Copy block and results" "C" #'jupyter-org-copy-block-and-results
-      :desc "Go to error" "e" #'jupyter-org-goto-error
-      :desc "Edit header" "h" #'jupyter-org-edit-header
-      :desc "Interrupt kernel" "i" #'jupyter-org-interrupt-kernel
-      :desc "Jump to block" "j" #'jupyter-org-jump-to-block
-      :desc "Move block" "m" #'jupyter-org-move-src-block
-      :desc "Merge blocks" "M" #'jupyter-org-merge-blocks
-      :desc "Next busy block" "n" #'jupyter-org-next-busy-src-block
-      :desc "Previous busy block" "N" #'jupyter-org-previous-busy-src-block
-      :desc "Execute to point" "p" #'jupyter-org-execute-to-point
-      :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
-      :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
-      :desc "Split block" "s" #'jupyter-org-split-src-block)
 
 (map! :map org-mode-map
       :after org
@@ -1152,8 +1174,8 @@
         org-startup-numerated nil))
 
 (after! org
-  (setq org-list-demote-modify-bullet '(("+" . "-")
-                                        ("-" . "+")
+  (setq org-list-demote-modify-bullet '(("-" . "+")
+                                        ("+" . "-")
                                         ("1." . "a.")
                                         ("1)" . "a)")))
 
@@ -1172,6 +1194,38 @@
     (nconc img (list :background "#fafafa")))
   (advice-add 'org--create-inline-image
               :filter-return #'org--create-inline-image-advice))
+
+(after! org
+  (jupyter-org-interaction-mode -1)
+  (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
+                                                       (:session . "py")))
+  (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
+                                                           (bash . t)
+                                                           (julia . t)
+                                                           (python . t)
+                                                           (jupyter . t)))
+  (setq jupyter-org-queue-requests t))
+
+
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :prefix ("j"" . "jupyter)
+      :desc "Execute and next block" "b" #'jupyter-org-execute-and-next-block
+      :desc "Clone block" "c" #'jupyter-org-clone-block
+      :desc "Copy block and results" "C" #'jupyter-org-copy-block-and-results
+      :desc "Go to error" "e" #'jupyter-org-goto-error
+      :desc "Edit header" "h" #'jupyter-org-edit-header
+      :desc "Interrupt kernel" "i" #'jupyter-org-interrupt-kernel
+      :desc "Jump to block" "j" #'jupyter-org-jump-to-block
+      :desc "Move block" "m" #'jupyter-org-move-src-block
+      :desc "Merge blocks" "M" #'jupyter-org-merge-blocks
+      :desc "Next busy block" "n" #'jupyter-org-next-busy-src-block
+      :desc "Previous busy block" "N" #'jupyter-org-previous-busy-src-block
+      :desc "Execute to point" "p" #'jupyter-org-execute-to-point
+      :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
+      :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
+      :desc "Split block" "s" #'jupyter-org-split-src-block)
 
 (use-package! org-journal
   :defer t
@@ -1208,7 +1262,7 @@
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
 
 (after! org
-  (plist-put org-format-latex-options :scale 2.0)
+  (plist-put org-format-latex-options :scale 1.5)
   (plist-put org-format-latex-options :html-scale 1.0)
   ;; (plist-put org-format-latex-options :foreground "white")
   (plist-put org-format-latex-options :background "Transparent")
@@ -1401,7 +1455,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (org-show-entry)  ; Unfold the current entry
   (org-show-children))  ; Show only direct subheadings of the slide but don't expand them
 
-(defun mu/org-present-start ()
+(defun my/org-present-start ()
   ;; Tweak font sizes
   (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
                                      (header-line (:height 4.0) variable-pitch)
@@ -1437,7 +1491,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 
 (use-package! org-present
   :hook
-  (org-mode-hook . variable-pitch-mode)
+  ;; (org-mode-hook . variable-pitch-mode)
   (org-present-mode-hook . my/org-present-start)
   (org-present-mode-quit-hook . my/org-present-end)
   (org-present-after-navigate-functions . my/org-present-prepare-slide)
@@ -1515,8 +1569,8 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   ;; a hookable mode anymore, you're advised to pick something yourself
   ;; if you don't care about startup time, use
   ;; :hook (after-init . org-roam-ui-mode)
-  :init
-  (setq org-roam-ui-browser-function #'browse-url-firefox)
+  :init (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url)
+  ;; :hook (org-roam-mode . org-roam-ui-mode)
   :config
   (setq org-roam-ui-sync-theme t
         org-roam-ui-follow t
@@ -1658,6 +1712,58 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 (after! org
   (setq org-log-done 'time)
   (setq org-closed-keep-when-no-todo t))
+
+(defun org-todo-if-needed (state)
+  "Change header state to STATE unless the current item is in STATE already."
+  (unless (string-equal (org-get-todo-state) state)
+    (org-todo state)))
+
+(defun ct/org-summary-todo-cookie (n-done n-not-done)
+  "Switch header state to DONE when all subentries are DONE, to TODO when none are DONE, and to STRT otherwise"
+  (let (org-log-done org-log-states)   ; turn off logging
+    (org-todo-if-needed (cond ((= n-done 0)
+                               "TODO")
+                              ((= n-not-done 0)
+                               "DONE")
+                              (t
+                               "STRT")))))
+
+(add-hook 'org-after-todo-statistics-hook #'ct/org-summary-todo-cookie)
+
+(defun ct/org-summary-checkbox-cookie ()
+  "Switch header state to DONE when all checkboxes are ticked, to TODO when none are ticked, and to STRT otherwise"
+  (let (beg end)
+    (unless (not (org-get-todo-state))
+      (save-excursion
+        (org-back-to-heading t)
+        (setq beg (point))
+        (end-of-line)
+        (setq end (point))
+        (goto-char beg)
+        ;; Regex group 1: %-based cookie
+        ;; Regex group 2 and 3: x/y cookie
+        (if (re-search-forward "\\[\\([0-9]*%\\)\\]\\|\\[\\([0-9]*\\)/\\([0-9]*\\)\\]"
+                               end t)
+            (if (match-end 1)
+                ;; [xx%] cookie support
+                (cond ((equal (match-string 1) "100%")
+                       (org-todo-if-needed "DONE"))
+                      ((equal (match-string 1) "0%")
+                       (org-todo-if-needed "TODO"))
+                      (t
+                       (org-todo-if-needed "STRT")))
+              ;; [x/y] cookie support
+              (if (> (match-end 2) (match-beginning 2)) ; = if not empty
+                  (cond ((equal (match-string 2) (match-string 3))
+                         (org-todo-if-needed "DONE"))
+                        ((or (equal (string-trim (match-string 2)) "")
+                             (equal (match-string 2) "0"))
+                         (org-todo-if-needed "TODO"))
+                        (t
+                         (org-todo-if-needed "STRT")))
+                (org-todo-if-needed "STRT"))))))))
+
+(add-hook 'org-checkbox-statistics-hook #'ct/org-summary-checkbox-cookie)
 
 ;; (defun custom-vterm-popup ()
 ;;   (if (window-dedicated-p nil)
