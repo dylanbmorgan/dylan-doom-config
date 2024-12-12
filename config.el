@@ -129,8 +129,11 @@
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
 
-(setq auth-sources '("~/.authinfo.gpg")
-      auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
+(use-package! auth-source
+  :defer t
+  :custom
+  (setq auth-sources '("~/.authinfo.gpg")
+        auth-source-cache-expiry 21600)) ; Change default to 6 hours to get me through most of a work day
 
 (setq projectile-sort-order 'recentf
       projectile-auto-discover t)
@@ -397,6 +400,10 @@
 ;; (doom/set-frame-opacity 95)
 ;; (doom/set-frame-opacity 85)
 
+(map! :map doom-leader-code-map
+      :localleader
+      "f" #'aphelia-format-buffer)
+
 (map! :nvi "C-TAB" nil)
 (map! :nvi "C-<tab>" nil)
 
@@ -419,7 +426,33 @@
   ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
 
 (map! :leader
-      :desc "Toggle Copilot" "c g" #'copilot-mode)
+      :desc "Toggle Copilot Completion" "c G" #'copilot-mode)
+
+(map! :map copilot-chat-map
+      :n "M-p" #'copilot-chat-prompt-history-previous
+      :n "M-n" #'copilot-chat-prompt-history-next
+      :leader
+      (:prefix ("cg" . "Copilot Chat")
+       :desc "add current buffer" "a" #'copilot-chat-add-current-buffer
+       :desc "switch to buffer" "b" #'copilot-chat-switch-to-buffer
+       :desc "delete buffer" "D" #'copilot-chat-del-current-buffer
+       :desc "buffer list" "l" #'copilot-chat-list
+       :desc "display" "g" #'copilot-chat-display
+       :desc "reset" "R" #'copilot-chat-reset
+       :desc "explain" "e" #'copilot-chat-explain
+       :desc "explain symbol at point" "s" #'copilot-chat-explain-symbol-at-line
+       :desc "explain function at point" "f" #'copilot-chat-explain-defun
+       :desc "review" "r" #'copilot-chat-review
+       :desc "review entire buffer" "R" #'copilot-chat-review-whole-buffer
+       :desc "document" "d" #'copilot-chat-doc
+       :desc "fix" "f" #'copilot-chat-fix
+       :desc "optimise" "o" #'copilot-chat-optimize
+       :desc "test" "t" #'copilot-chat-test
+       :desc "custom paste" "P" #'copilot-chat-custom-prompt-selection
+       :desc "custom function prompt" "F" #'copilot-chat-custom-prompt-function
+       :desc "ask and insert" "i" #'copilot-chat-ask-and-insert
+       :desc "insert commit message" "c" #'copilot-chat-insert-commit-messages
+       :desc "set model" "m" #'copilot-chat-set-model))
 
 (use-package! indent-bars
   :hook ((prog-mode python-mode sh-mode f90-mode julia-mode yaml-mode) . indent-bars-mode)
@@ -969,10 +1002,6 @@
                                      :target nil
                                      :cwd nil)))
 
-(use-package! org-auto-tangle
-  :defer t
-  :hook (org-mode . org-auto-tangle-mode))
-
 (after! org
   (setq org-agenda-files '("~/Documents/org/roam/*.org")))
 
@@ -1058,7 +1087,8 @@
       :desc "Open result" "o" #'org-babel-open-src-block-result
       :desc "Remove result" "r" #'org-babel-remove-result
       :desc "Remove all results" "R" #'+org/remove-result-blocks
-      :desc "Execute subtree" "s" #'org-babel-execute-subtree)
+      :desc "Execute subtree" "s" #'org-babel-execute-subtree
+      :desc "Tangle SRC blocks" "t" #'org-babel-tangle)
 
 (evil-define-command +evil-buffer-org-new (_count file)
   "Creates a new ORG buffer replacing the current window, optionally editing a certain FILE"
@@ -1555,8 +1585,11 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   (setq +org-pretty-mode t))
 
 (use-package! org-roam
+  :defer t
   :custom
-  (org-roam-directory "~/Documents/org/roam")
+  (org-roam-directory "~/Documents/org/roam/")
+  (org-roam-completion-everywhere t)
+  (org-roam-db-location "~/Documents/org/roam/org-roam.db")
   (org-roam-db-autosync-mode t)
   (org-roam-completion-everywhere t))
 

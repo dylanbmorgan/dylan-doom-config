@@ -59,7 +59,7 @@
   :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
 (package! dall-e-shell)
 (package! ellama)
-(package! emacsql :pin "491105a")
+;; (package! emacsql :pin "491105a")
 (package! engrave-faces)
 ;; (package! fortpy)
 (package! gptel)
@@ -79,7 +79,6 @@
 (package! numpydoc)
 (package! obsidian)
 (package! org-ai)
-(package! org-auto-tangle)
 ;; (package! org-edit-latex)
 (package! org-fragtog)
 (package! orgnote

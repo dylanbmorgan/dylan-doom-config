@@ -53,7 +53,6 @@
   - [[#python][Python]]
   - [[#rust][Rust]]
 - [[#org-mode][Org-mode]]
-  - [[#auto-tangle][Auto Tangle]]
   - [[#agenda][Agenda]]
   - [[#appear][Appear]]
   - [[#attach][Attach]]
@@ -327,8 +326,11 @@ Set the GPG directories and increase the cache expiry
 (setq user-full-name "Dylan Morgan"
       user-mail-address "dbmorgan98@gmail.com")
 
-(setq auth-sources '("~/.authinfo.gpg")
-      auth-source-cache-expiry 21600) ; Change default to 6 hours to get me through most of a work day
+(use-package! auth-source
+  :defer t
+  :custom
+  (setq auth-sources '("~/.authinfo.gpg")
+        auth-source-cache-expiry 21600)) ; Change default to 6 hours to get me through most of a work day
 #+end_src
 
 ** Projectile
@@ -395,13 +397,15 @@ Setup the systemd file here
 [Unit]
 Description=Emacs server daemon
 Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
-Wants=gpg-agent.service
+# Wants=gpg-agent.service
 
 [Service]
-Type=forking
-ExecStart=fish -c 'emacs --daemon'
+Type=simple
+ExecStart=/usr/local/bin/emacs --fg-daemon
 ExecStop=emacsclient --no-wait --eval "(progn (setq kill-emacs-hook nil) (kill emacs))"
-Environment=COLORTERM=truecolor
+# ExecStop=/usr/local/bin/emacsclient --eval "(kill-emacs)"
+# Environment=COLORTERM=truecolor
+Environment=SSH_AUTH_SOCK=%t/keyring/ssh
 Restart=on-failure
 
 [Install]
@@ -436,7 +440,7 @@ Terminal=false
 Categories=TextEditor;Utility;
 StartupWMClass=Emacs
 Keywords=Text;Editor;
-X-KDE-StartupNotify=false
+# X-KDE-StartupNotify=false
 #+end_src
 
 Lastly, while I'm not sure quite why it happens, but after a bit it seems that new emacsclient frames start on the =*scratch*= buffer instead of the dashboard. I prefer the dashboard, so let's ensure that's always switched to in new frames.
@@ -865,7 +869,17 @@ Also add blur and opacity (blur doesn't work)
 
 * Languages
 ** General
+*** TODO Formatting
+Rebind default format key to aphelia-format-buffer
+
+#+begin_src emacs-lisp
+(map! :map doom-leader-code-map
+      :localleader
+      "f" #'aphelia-format-buffer)
+#+end_src
+
 *** Github Copilot
+**** Prompt
 Firstly unbind aya-create from C-TAB
 
 #+begin_src emacs-lisp
@@ -895,7 +909,36 @@ Then define the keybindings to use for Github copilot
   ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
 
 (map! :leader
-      :desc "Toggle Copilot" "c g" #'copilot-mode)
+      :desc "Toggle Copilot Completion" "c G" #'copilot-mode)
+#+end_src
+
+**** Chat
+#+begin_src emacs-lisp
+(map! :map copilot-chat-map
+      :n "M-p" #'copilot-chat-prompt-history-previous
+      :n "M-n" #'copilot-chat-prompt-history-next
+      :leader
+      (:prefix ("cg" . "Copilot Chat")
+       :desc "add current buffer" "a" #'copilot-chat-add-current-buffer
+       :desc "switch to buffer" "b" #'copilot-chat-switch-to-buffer
+       :desc "delete buffer" "D" #'copilot-chat-del-current-buffer
+       :desc "buffer list" "l" #'copilot-chat-list
+       :desc "display" "g" #'copilot-chat-display
+       :desc "reset" "R" #'copilot-chat-reset
+       :desc "explain" "e" #'copilot-chat-explain
+       :desc "explain symbol at point" "s" #'copilot-chat-explain-symbol-at-line
+       :desc "explain function at point" "f" #'copilot-chat-explain-defun
+       :desc "review" "r" #'copilot-chat-review
+       :desc "review entire buffer" "R" #'copilot-chat-review-whole-buffer
+       :desc "document" "d" #'copilot-chat-doc
+       :desc "fix" "f" #'copilot-chat-fix
+       :desc "optimise" "o" #'copilot-chat-optimize
+       :desc "test" "t" #'copilot-chat-test
+       :desc "custom paste" "P" #'copilot-chat-custom-prompt-selection
+       :desc "custom function prompt" "F" #'copilot-chat-custom-prompt-function
+       :desc "ask and insert" "i" #'copilot-chat-ask-and-insert
+       :desc "insert commit message" "c" #'copilot-chat-insert-commit-messages
+       :desc "set model" "m" #'copilot-chat-set-model))
 #+end_src
 
 *** Indent Bars
@@ -1656,15 +1699,6 @@ Set keybindings for poetry and disable over tramp
 #+end_src
 
 * Org-mode
-** Auto Tangle
-Add ~#+auto_tangel: t~ to the org header to automatically tangle when a document is saved
-
-#+begin_src emacs-lisp
-(use-package! org-auto-tangle
-  :defer t
-  :hook (org-mode . org-auto-tangle-mode))
-#+end_src
-
 ** Agenda
 
 #+begin_src emacs-lisp
@@ -1777,7 +1811,8 @@ Define keybindings for some commands I commonly use
       :desc "Open result" "o" #'org-babel-open-src-block-result
       :desc "Remove result" "r" #'org-babel-remove-result
       :desc "Remove all results" "R" #'+org/remove-result-blocks
-      :desc "Execute subtree" "s" #'org-babel-execute-subtree)
+      :desc "Execute subtree" "s" #'org-babel-execute-subtree
+      :desc "Tangle SRC blocks" "t" #'org-babel-tangle)
 #+end_src
 
 ** Buffers
@@ -2430,8 +2465,11 @@ Make all the things look pretty
 
 #+begin_src emacs-lisp
 (use-package! org-roam
+  :defer t
   :custom
-  (org-roam-directory "~/Documents/org/roam")
+  (org-roam-directory "~/Documents/org/roam/")
+  (org-roam-completion-everywhere t)
+  (org-roam-db-location "~/Documents/org/roam/org-roam.db")
   (org-roam-db-autosync-mode t)
   (org-roam-completion-everywhere t))
 #+end_src
