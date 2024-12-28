@@ -46,8 +46,6 @@
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
 
-(setq deft-directory "~/Documents/deft/")
-
 (use-package! ellama
   :defer t
   :init
@@ -229,12 +227,12 @@
   ;; :bind
   (map! :nvi "M-0" nil)  ; unbind from go to last workspace
   (map! "M-0" #'treemacs-select-window))
-  ;;       ("C-x t 1"   . treemacs-delete-other-windows)
-  ;;       ("C-x t t"   . treemacs)
-  ;;       ("C-x t d"   . treemacs-select-directory)
-  ;;       ("C-x t B"   . treemacs-bookmark)
-  ;;       ("C-x t C-t" . treemacs-find-file)
-  ;;       ("C-x t M-t" . treemacs-find-tag)))
+        ;; ("SPC e 1"   . treemacs-delete-other-windows)
+        ;; ("SPC e t"   . treemacs)
+        ;; ("SPC e d"   . treemacs-select-directory)
+        ;; ("SPC e b"   . treemacs-bookmark)
+        ;; ("SPC e f"   . treemacs-find-file)
+        ;; ("SPC e F"   . treemacs-find-tag)))
 
 (setq tramp-default-method "ssh")
 
@@ -293,13 +291,13 @@
 
 (when (string= (system-name) "maccie")
   (setq doom-font (font-spec :family "Fira Code" :size 15)
-        doom-big-font (font-spec :family "Fira Code" :size 20)))
-      ;; doom-variable-pitch-font (font-spec :family "InputMonoNarrow Nerd Font" :size 18))
-      ;; doom-serif-font (font-spec :family "Droid*Sans*M*" :size 16 :weight 'light))
+        doom-big-font (font-spec :family "Iosevka Aile" :size 20)
+        doom-variable-pitch-font (font-spec :family "Iosevka Aile" :size 15)))
 
 (when (string= (system-name) "arch")
   (setq doom-font (font-spec :family "Fira Code" :size 16)
-        doom-big-font (font-spec :family "Fira Code" :size 22)))
+        doom-big-font (font-spec :family "Iosevka Aile" :size 21)
+        doom-variable-pitch-font (font-spec :family "Iosevka Aile" :size 16)))
 
 (after! text-mode
   (set-input-method 'TeX))
@@ -308,7 +306,7 @@
 
 ;; (setq minimap-mode 0)
 
-(display-time-mode 1) ; Show the time
+;; (display-time-mode 1) ; Show the time
 (size-indication-mode 1) ; Info about what's going on
 (setq display-time-default-load-average nil) ; Hide the load average
 (setq all-the-icons-scale-factor 1.2) ; prevent the end of the modeline from being cut off
@@ -400,9 +398,9 @@
 ;; (doom/set-frame-opacity 95)
 ;; (doom/set-frame-opacity 85)
 
-(map! :map doom-leader-code-map
-      :localleader
-      "f" #'aphelia-format-buffer)
+(map! :leader
+      :prefix "c"
+      :desc "Aphelia format buffer" "F" #'apheleia-format-buffer)
 
 (map! :nvi "C-TAB" nil)
 (map! :nvi "C-<tab>" nil)
@@ -428,6 +426,12 @@
 (map! :leader
       :desc "Toggle Copilot Completion" "c G" #'copilot-mode)
 
+;; (use-package! copilot-chat
+;;   :defer t
+;;   :config
+;;   (setq copilot-chat-model "o1-preview"
+;;         copilot-chat-frontend 'org))
+
 (map! :map copilot-chat-map
       :n "M-p" #'copilot-chat-prompt-history-previous
       :n "M-n" #'copilot-chat-prompt-history-next
@@ -443,7 +447,7 @@
        :desc "explain symbol at point" "s" #'copilot-chat-explain-symbol-at-line
        :desc "explain function at point" "f" #'copilot-chat-explain-defun
        :desc "review" "r" #'copilot-chat-review
-       :desc "review entire buffer" "R" #'copilot-chat-review-whole-buffer
+       :desc "review entire buffer" "B" #' copilot-chat-review-whole-buffer
        :desc "document" "d" #'copilot-chat-doc
        :desc "fix" "f" #'copilot-chat-fix
        :desc "optimise" "o" #'copilot-chat-optimize
@@ -695,6 +699,11 @@
 (require 'zotra)
 (setq zotra-backend 'zotra-server)
 (setq zotra-local-server-directory "~/Applications/zotra-server/")
+
+(use-package! lsp-bridge
+  :config
+  (setq lsp-bridge-enable-log nil)
+  (global-lsp-bridge-mode))
 
 (after! dap-mode
   (setq dap-python-debugger 'debugpy))

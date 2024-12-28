@@ -15,7 +15,6 @@
   - [[#buffers][Buffers]]
   - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
-  - [[#deft][Deft]]
   - [[#ellama][Ellama]]
   - [[#eval][Eval]]
   - [[#evil][Evil]]
@@ -177,12 +176,6 @@ I like to have custom delays for company mode, the leader key, and the spell che
 
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
-#+end_src
-
-** Deft
-
-#+begin_src emacs-lisp
-(setq deft-directory "~/Documents/deft/")
 #+end_src
 
 ** TODO Ellama
@@ -593,12 +586,12 @@ To enable bidirectional synchronisation of LSP workspace folders and treemacs pr
   ;; :bind
   (map! :nvi "M-0" nil)  ; unbind from go to last workspace
   (map! "M-0" #'treemacs-select-window))
-  ;;       ("C-x t 1"   . treemacs-delete-other-windows)
-  ;;       ("C-x t t"   . treemacs)
-  ;;       ("C-x t d"   . treemacs-select-directory)
-  ;;       ("C-x t B"   . treemacs-bookmark)
-  ;;       ("C-x t C-t" . treemacs-find-file)
-  ;;       ("C-x t M-t" . treemacs-find-tag)))
+        ;; ("SPC e 1"   . treemacs-delete-other-windows)
+        ;; ("SPC e t"   . treemacs)
+        ;; ("SPC e d"   . treemacs-select-directory)
+        ;; ("SPC e b"   . treemacs-bookmark)
+        ;; ("SPC e f"   . treemacs-find-file)
+        ;; ("SPC e F"   . treemacs-find-tag)))
 #+end_src
 
 ** Tramp
@@ -634,7 +627,6 @@ Firstly, set the default margin
 ;; (setq moom-user-margin '(50 50 50 50)) ; {top, bottom, left, right}
 ;; (moom-mode 1)
 #+end_src
-
 *** Within Emacs
 + Make Doom emacs ask which buffer to see after splitting a window.
 + Take new window space from all other windows (not just current).
@@ -710,13 +702,13 @@ They all accept either a font-spec, font string ("Input Mono-12"), or xlfd font 
 #+begin_src emacs-lisp
 (when (string= (system-name) "maccie")
   (setq doom-font (font-spec :family "Fira Code" :size 15)
-        doom-big-font (font-spec :family "Fira Code" :size 20)))
-      ;; doom-variable-pitch-font (font-spec :family "InputMonoNarrow Nerd Font" :size 18))
-      ;; doom-serif-font (font-spec :family "Droid*Sans*M*" :size 16 :weight 'light))
+        doom-big-font (font-spec :family "Iosevka Aile" :size 20)
+        doom-variable-pitch-font (font-spec :family "Iosevka Aile" :size 15)))
 
 (when (string= (system-name) "arch")
   (setq doom-font (font-spec :family "Fira Code" :size 16)
-        doom-big-font (font-spec :family "Fira Code" :size 22)))
+        doom-big-font (font-spec :family "Iosevka Aile" :size 21)
+        doom-variable-pitch-font (font-spec :family "Iosevka Aile" :size 16)))
 #+end_src
 
 Use LaTeX as the default input method to type special characters
@@ -743,7 +735,7 @@ Display the minimap (doesn't work well with org files \therefore disabled)
 Adjust some settings
 
 #+begin_src emacs-lisp
-(display-time-mode 1) ; Show the time
+;; (display-time-mode 1) ; Show the time
 (size-indication-mode 1) ; Info about what's going on
 (setq display-time-default-load-average nil) ; Hide the load average
 (setq all-the-icons-scale-factor 1.2) ; prevent the end of the modeline from being cut off
@@ -870,12 +862,12 @@ Also add blur and opacity (blur doesn't work)
 * Languages
 ** General
 *** TODO Formatting
-Rebind default format key to aphelia-format-buffer
+Add key for aphelia-format-buffer
 
 #+begin_src emacs-lisp
-(map! :map doom-leader-code-map
-      :localleader
-      "f" #'aphelia-format-buffer)
+(map! :leader
+      :prefix "c"
+      :desc "Aphelia format buffer" "F" #'apheleia-format-buffer)
 #+end_src
 
 *** Github Copilot
@@ -914,6 +906,12 @@ Then define the keybindings to use for Github copilot
 
 **** Chat
 #+begin_src emacs-lisp
+;; (use-package! copilot-chat
+;;   :defer t
+;;   :config
+;;   (setq copilot-chat-model "o1-preview"
+;;         copilot-chat-frontend 'org))
+
 (map! :map copilot-chat-map
       :n "M-p" #'copilot-chat-prompt-history-previous
       :n "M-n" #'copilot-chat-prompt-history-next
@@ -929,7 +927,7 @@ Then define the keybindings to use for Github copilot
        :desc "explain symbol at point" "s" #'copilot-chat-explain-symbol-at-line
        :desc "explain function at point" "f" #'copilot-chat-explain-defun
        :desc "review" "r" #'copilot-chat-review
-       :desc "review entire buffer" "R" #'copilot-chat-review-whole-buffer
+       :desc "review entire buffer" "B" #' copilot-chat-review-whole-buffer
        :desc "document" "d" #'copilot-chat-doc
        :desc "fix" "f" #'copilot-chat-fix
        :desc "optimise" "o" #'copilot-chat-optimize
@@ -1307,6 +1305,15 @@ Use the zotra-server backend
 #+end_src
 
 ** LSP
+*** Bridge
+
+#+begin_src emacs-lisp
+(use-package! lsp-bridge
+  :config
+  (setq lsp-bridge-enable-log nil)
+  (global-lsp-bridge-mode))
+#+end_src
+
 *** TODO DAP
 Enable the DAP debugger
 
