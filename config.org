@@ -15,6 +15,7 @@
   - [[#buffers][Buffers]]
   - [[#chatgpt][ChatGPT]]
   - [[#delays][Delays]]
+  - [[#dirvish][Dirvish]]
   - [[#ellama][Ellama]]
   - [[#eval][Eval]]
   - [[#evil][Evil]]
@@ -41,7 +42,6 @@
   - [[#theme][Theme]]
 - [[#languages][Languages]]
   - [[#general-1][General]]
-  - [[#docker][Docker]]
   - [[#magit][Magit]]
   - [[#bash][Bash]]
   - [[#fortran][Fortran]]
@@ -58,6 +58,7 @@
   - [[#babel][Babel]]
   - [[#buffers-1][Buffers]]
   - [[#capture][Capture]]
+  - [[#cite][Cite]]
   - [[#company][Company]]
   - [[#exporting][Exporting]]
   - [[#file-conversions][File Conversions]]
@@ -68,7 +69,7 @@
   - [[#jupyter][Jupyter]]
   - [[#journal][Journal]]
   - [[#keybindings][Keybindings]]
-  - [[#latex-fragments][LaTeX Fragments]]
+  - [[#latex-1][LaTeX]]
   - [[#presentations][Presentations]]
   - [[#prettification][Prettification]]
   - [[#roam][Roam]]
@@ -177,6 +178,20 @@ I like to have custom delays for company mode, the leader key, and the spell che
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
 #+end_src
+** Dirvish
+Let Dirvish take over Dired globally
+
+#+begin_src emacs-lisp
+(use-package! dirvish
+  :defer t
+  :init
+  (dirvish-override-dired-mode)
+  :config
+  (setq dirvish-side-follow-mode t
+        dirvish-peek-mode t
+        dirvish-preview-dispatchers
+        (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers)))
+#+end_src
 
 ** TODO Ellama
 
@@ -200,7 +215,13 @@ When I want to make a substitution, I want it to be global more often than not �
 #+begin_src emacs-lisp
 (after! evil
   (setq evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
+
+(map! :map evil-insert-state-map
+      "C-p" #'evil-previous-line
+      "C-n" #'evil-next-line)
 #+end_src
+
+Change some of the default evil maps so I can still use emacs-like keybindings in insert mode
 
 ** File types
 *** Ebooks
@@ -317,13 +338,11 @@ Set the GPG directories and increase the cache expiry
 
 #+begin_src emacs-lisp
 (setq user-full-name "Dylan Morgan"
-      user-mail-address "dbmorgan98@gmail.com")
+      user-mail-address "dbmorgan98@protonmail.com")
 
-(use-package! auth-source
-  :defer t
-  :custom
+(after! auth-source
   (setq auth-sources '("~/.authinfo.gpg")
-        auth-source-cache-expiry 21600)) ; Change default to 6 hours to get me through most of a work day
+        auth-source-cache-expiry 21600))  ; Change default to 6 hours to get me through most of a work day
 #+end_src
 
 ** Projectile
@@ -549,30 +568,30 @@ To enable bidirectional synchronisation of LSP workspace folders and treemacs pr
   (progn
     (setq treemacs-eldoc-display                   'detailed
           treemacs-find-workspace-method           'find-for-file-or-pick-first
+          treemacs-indent-guide-style              'line
           treemacs-missing-project-action          'remove
           treemacs-move-forward-on-expand          t
           treemacs-project-follow-cleanup          t
-          treemacs-indent-guide-style              'line
-          treemacs-recenter-distance               0.2
-          treemacs-recenter-after-file-follow      'always
-          treemacs-recenter-after-tag-follow       'always
-          treemacs-recenter-after-project-jump     'always
-          treemacs-recenter-after-project-expand   'always
           treemacs-project-follow-into-home        t
+          treemacs-recenter-after-file-follow      'always
+          treemacs-recenter-after-project-expand   'always
+          treemacs-recenter-after-project-jump     'always
+          treemacs-recenter-after-tag-follow       'always
+          treemacs-recenter-distance               0.2
           treemacs-show-hidden-files               nil
-          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
           treemacs-select-when-already-in-treemacs 'next-or-back
+          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
           treemacs-tag-follow-delay                1.0
           treemacs-width-increment                 5)
 
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
     ;;(treemacs-resize-icons 44)
-    (treemacs-follow-mode t)
-    (treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
+    (treemacs-project-follow-mode t)
+    (treemacs-tag-follow-mode t)
     (when treemacs-python-executable
       (treemacs-git-commit-diff-mode t))
 
@@ -592,6 +611,9 @@ To enable bidirectional synchronisation of LSP workspace folders and treemacs pr
         ;; ("SPC e b"   . treemacs-bookmark)
         ;; ("SPC e f"   . treemacs-find-file)
         ;; ("SPC e F"   . treemacs-find-tag)))
+
+(after! imenu
+  (setq imenu-auto-rescan t))
 #+end_src
 
 ** Tramp
@@ -972,36 +994,6 @@ Enable word wrapping (almost) everywhere
 ;; (add-hook! 'sh-mode-hook #'+word-wrap-mode)
 #+end_src
 
-** TODO Docker
-Setup lsp-docker
-
-#+begin_src emacs-lisp
-;; Uncomment the next line if you are using this from source
-;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
-
-;; (require 'lsp-docker)
-
-;; (defvar lsp-docker-client-packages
-;;     '(lsp-css lsp-clients lsp-bash lsp-go lsp-html lsp-typescript ; ruff-lsp
-;;       lsp-terraform lsp-clangd))
-
-;; (setq lsp-docker-client-configs
-;;     '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
-;;       (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
-;;       (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
-;;       ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
-;;       (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
-;;       (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")))
-;;       ;; (:server-id ruff-lsp :docker-server-id pyls-docker :server-command "pyls")))
-;;       ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
-
-;; (require 'lsp-docker)
-;; (lsp-docker-init-clients
-;;   :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
-;;   :client-packages lsp-docker-client-packages
-;;   :client-configs lsp-docker-client-configs)
-#+end_src
-
 ** Magit
 Add keybindings to push to remote and view diffs.
 
@@ -1111,8 +1103,10 @@ Enable formatting on save for Julia buffers
 
 *** LSP
 #+begin_src emacs-lisp
+(setq lsp-julia-package-dir nil)
+
 (after! lsp-julia
-  (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
+  (setq lsp-julia-default-environment "~/.julia/environments/v1.11"))
 
 (add-hook! 'julia-mode-hook #'lsp-mode)
 #+end_src
@@ -1141,7 +1135,6 @@ Add keybindings for these extensions
 
 ** LaTeX
 *** Biblio
-
 #+begin_src emacs-lisp
 (setq! bibtex-completion-bibliography '("~/Documents/warwick/thesus/references.bib"))
 #+end_src
@@ -1207,6 +1200,12 @@ Enable a company completion back-end for LaTeX maths symbols
 #+end_src
 
 *** General
+A workaround for enabling ~LaTeX-mode~ until a stable emacs 30 version
+
+#+begin_src emacs-lisp
+(setq major-mode-remap-alist major-mode-remap-defaults)
+#+end_src
+
 - Make the location of latexmk available to emacs
 - Make AUCTeX query the location of the master file
 - Add some compilation options
@@ -1305,15 +1304,6 @@ Use the zotra-server backend
 #+end_src
 
 ** LSP
-*** Bridge
-
-#+begin_src emacs-lisp
-(use-package! lsp-bridge
-  :config
-  (setq lsp-bridge-enable-log nil)
-  (global-lsp-bridge-mode))
-#+end_src
-
 *** TODO DAP
 Enable the DAP debugger
 
@@ -1757,9 +1747,9 @@ Toggle pretty entities in org mode when the cursor moves over them
   (require 'org-src)
   (require 'ob-emacs-lisp)
   (require 'ob-async)
-  (require 'ob-jupyter)
-  (require 'jupyter)
-  (require 'jupyter-org-client)
+  ;; (require 'ob-jupyter)
+  ;; (require 'jupyter)
+  ;; (require 'jupyter-org-client)
 
   (setq org-src-fontify-natively t
         org-src-tab-acts-natively t
@@ -1859,6 +1849,70 @@ Quickly take down notes
          (file+headline "" "Meetings")
          "* %?\n %U"))))
 #+end_src
+** Cite
+Include citations in org-mode
+
+References in Org are fairly easy now, thanks to ~org-cite~. The ~:tools biblio~ module gives a fairly decent basic setup, but it would be nice to take it a bit further. This mostly consists of tweaking settings, but there is one extra package I’ll grab for prettier in-buffer citations.
+
+In particular, by setting ~org-cite-csl-activate-use-document-style~, we can have the in-buffer displayed citations be the same as the exported form. Isn’t that lovely!
+
+Unfortunately, there’s currently a potential for undesirable buffer modifications, so we’ll put all the activation code behind a function we can call when we want it.
+
+#+begin_src emacs-lisp
+(use-package! oc-csl-activate
+  :after oc
+  :config
+  (setq org-cite-csl-activate-use-document-style t))
+  ;; (defun +org-cite-csl-activate/enable ()
+  ;;   (interactive)
+  ;;   (setq org-cite-activate-processor 'csl-activate)
+  ;;   (add-hook! 'org-mode-hook '((lambda () (cursor-sensor-mode 1)) org-cite-csl-activate-render-all))
+  ;;   (defadvice! +org-cite-csl-activate-render-all-silent (orig-fn)
+  ;;     :around #'org-cite-csl-activate-render-all
+  ;;     (with-silent-modifications (funcall orig-fn)))
+  ;;   (when (eq major-mode 'org-mode)
+  ;;     (with-silent-modifications
+  ;;       (save-excursion
+  ;;         (goto-char (point-min))
+  ;;         (org-cite-activate (point-max)))
+  ;;       (org-cite-csl-activate-render-all)))
+  ;;   (fmakunbound #'+org-cite-csl-activate/enable)))
+#+end_src
+
+Now that ~oc-csl-activate~ is set up, let’s go ahead and customise some of the packages already loaded. For starters, we can make use of the my Zotero files with citar, and make the symbols a bit prettier.
+
+#+begin_src emacs-lisp
+(after! citar
+  (setq org-cite-global-bibliography '("~/Documents/org/references.bib")))
+        ;; (let ((libfile-search-names '("references.json" "References.json" "references.bib" "References.bib"))
+        ;;       (libfile-dir "~/Zotero")
+        ;;       paths)
+        ;;   (dolist (libfile libfile-search-names)
+        ;;     (when (and (not paths)
+        ;;                (file-exists-p (expand-file-name libfile libfile-dir)))
+        ;;       (setq paths (list (expand-file-name libfile libfile-dir)))))
+        ;;   paths)
+        ;; citar-bibliography org-cite-global-bibliography
+        ;; citar-symbols
+        ;; `((file ,(nerd-icons-faicon "nf-fa-file_o" :face 'nerd-icons-green :v-adjust -0.1) . " ")
+        ;;   (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
+        ;;   (link ,(nerd-icons-octicon "nf-oct-link" :face 'nerd-icons-orange :v-adjust 0.01) . " "))))
+#+end_src
+
+We can also make the Zotero CSL styles available to use.
+
+#+begin_src emacs-lisp
+(after! oc-csl
+  (setq org-cite-csl-styles-dir "~/Zotero/styles"))
+#+end_src
+
+Since CSL works so nicely everywhere, we might as well use it as the default citation export processor for everything.
+
+#+begin_src emacs-lisp
+(after! oc
+  (setq org-cite-export-processors '((t csl))))
+#+end_src
+
 ** Company
 Company completion of org blocks
 
@@ -1872,10 +1926,10 @@ Company completion of org blocks
 #+end_src
 
 ** TODO Exporting
-
+*** Commands
 I like to export markdown files written in org as README.org. I'm creating a shortcut to use for this in future.
 
-I also export a lot of org files to markdown so I will also add another shortcut for that command here.
+I also export a lot of org files to markdown and LaTeX so I will also add another shortcut for these commands here.
 
 #+begin_src emacs-lisp
 (map! :map org-mode-map
@@ -1883,6 +1937,8 @@ I also export a lot of org files to markdown so I will also add another shortcut
       :localleader
       :desc "org-export-to-org"
       "E" 'org-org-export-to-org
+      :desc "org-export-to-LaTeX-pdf"
+      "L" 'org-latex-export-to-pdf
       :desc "org-export-as-md"
       "M" 'org-pandoc-export-to-markdown)
 #+end_src
@@ -2028,16 +2084,12 @@ Enable Jupyter support in org-mode using the Jupyter package
 
 #+begin_src emacs-lisp
 (after! org
-  (jupyter-org-interaction-mode -1)
   (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
                                                        (:session . "py")))
   (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
                                                            (bash . t)
                                                            (julia . t)
-                                                           (python . t)
-                                                           (jupyter . t)))
-  (setq jupyter-org-queue-requests t))
-
+                                                           (python . t))))
 
 (map! :map org-mode-map
       :after org
@@ -2058,6 +2110,12 @@ Enable Jupyter support in org-mode using the Jupyter package
       :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
       :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
       :desc "Split block" "s" #'jupyter-org-split-src-block)
+#+end_src
+
+Disable the ~org-element-at-point~ warning caused by ~jupyter-org-interaction-mode~
+
+#+begin_src emacs-lisp
+(add-to-list 'warning-suppress-types '(org-element org-element-parser))
 #+end_src
 
 ** TODO Journal
@@ -2093,7 +2151,7 @@ Change some of the org keybindings
       "M-<return>" 'org-insert-heading)
 #+end_src
 
-** LaTeX Fragments
+** LaTeX
 *** CDLaTeX
 Enable cdlatex by default and edit an environment after inserting one.
 
@@ -2103,17 +2161,29 @@ Enable cdlatex by default and edit an environment after inserting one.
   (add-hook! 'org-mode-hook #'turn-on-org-cdlatex)
 
   (defadvice! org-edit-latex-emv-after-insert ()
-    :after #'org-cdlatex-environment-indent
+    :after #' org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 #+end_src
 
 *** TODO In-line Fragments
-Use org-fragtog mode to automatically generate latex fragments
-
-Change Latex fragment size
+- Use org-fragtog mode to automatically generate latex fragments
+- Change latex to lualatex for preview so it works with some packages need to output org to pdf
+- Change Latex fragment size
 
 #+begin_src emacs-lisp
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
+
+(after! org
+  (setf (alist-get 'dvipng org-preview-latex-process-alist)
+        '(:programs ("lualatex" "dvipng")
+          :description "dvi > png"
+          :message "You need to install the programs: lualatex and dvipng."
+          :image-input-type "dvi"
+          :image-output-type "png"
+          :image-size-adjust (1.0 . 1.0)
+          :latex-compiler ("lualatex --interaction nonstopmode --output-format=dvi --output-directory %o %f")
+          :image-converter ("dvipng -D %D -T tight -o %O %f")
+          :transparent-image-converter ("dvipng -D %D -T tight -bg Transparent -o %O %f"))))
 
 (after! org
   (plist-put org-format-latex-options :scale 1.5)
@@ -2154,19 +2224,23 @@ Use engraved instead of verbatim src blocks. I used to use listings but have sin
 ;;                              :snippet "\\ifcsname Code\\endcsname\n  \\let\\oldcode\\Code\\renewcommand{\\Code}{\\microtypesetup{protrusion=false}\\oldcode}\n\\fi"
 ;;                              :after (engraved-code microtype)))
 
-(defadvice! org-latex-example-block-engraved (orig-fn example-block contents info)
-  "Like `org-latex-example-block', but supporting an engraved backend"
-  :around #'org-latex-example-block
-  (let ((output-block (funcall orig-fn example-block contents info)))
-    (if (eq 'engraved (plist-get info :latex-listings))
-        (format "\\begin{Code}[alt]\n%s\n\\end{Code}" output-block)
-      output-block)))
+;; (defadvice! org-latex-example-block-engraved (orig-fn example-block contents info)
+;;   "Like `org-latex-example-block', but supporting an engraved backend"
+;;   :around #'org-latex-example-block
+;;   (let ((output-block (funcall orig-fn example-block contents info)))
+;;     (if (eq 'engraved (plist-get info :latex-listings))
+;;         (format "\\begin{Code}[alt]\n%s\n\\end{Code}" output-block)
+;;       output-block)))
 
-;; (after! org
-;; (setq org-latex-src-block-backend 'listings)
-;; (require 'ox-latex)
-;; (add-to-list 'org-latex-packages-alist '("" "listings"))
-;; (add-to-list 'org-latex-packages-alist '("" "color")))
+(after! org
+    (setq org-latex-src-block-backend 'engraved))
+    ;; (setq org-latex-engraved-options))
+    ;; (setq org-latex-engraved-preamble))
+
+ ;; (setq org-latex-src-block-backend 'listings)
+ ;; (require 'ox-latex)
+ ;; (add-to-list 'org-latex-packages-alist '("" "listings"))
+ ;; (add-to-list 'org-latex-packages-alist '("" "color")))
 #+end_src
 
 *** Prettier Highlighting
@@ -2463,9 +2537,8 @@ text.
 Make all the things look pretty
 
 #+begin_src emacs-lisp
-(after! org-mode
-  (setq org-pretty-entities t)
-  (setq +org-pretty-mode t))
+(after! org
+  (setq org-pretty-entities t))
 #+end_src
 
 ** Roam

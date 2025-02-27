@@ -14,6 +14,8 @@
 ;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
 ;;      directory (for easy access to its source code).
 
+(setenv "LSP_USE_PLISTS" "1")
+
 (doom! :input
        ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
        ;;chinese
@@ -113,8 +115,8 @@
        (debugger          ; FIXME stepping through code, to help you add bugs
         +lsp)
        direnv
-       (docker
-        +lsp)
+       ;; (docker
+       ;;  +lsp)
        editorconfig      ; let someone else argue about tabs vs spaces
        ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
@@ -156,7 +158,7 @@
        ;;dhall
        ;;elixir            ; erlang done right
        ;;elm               ; care for a cup of TEA?
-       (emacs-lisp)        ; drown in parentheses
+       emacs-lisp          ; drown in parentheses
        ;;erlang            ; an elegant language for a more civilized age
        (ess                ; emacs speaks statistics
         +stan)
@@ -217,7 +219,7 @@
         ;; +tree-sitter
         +cython
         +pyright
-        +pyenv
+        ;; +pyenv
         +lsp)
        ;; +conda)
        ;;qt                ; the 'cutest' gui framework ever

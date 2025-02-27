@@ -46,6 +46,16 @@
 (after! spell-fu
   (setq spell-fu-idle-delay 0.5))
 
+(use-package! dirvish
+  :defer t
+  :init
+  (dirvish-override-dired-mode)
+  :config
+  (setq dirvish-side-follow-mode t
+        dirvish-peek-mode t
+        dirvish-preview-dispatchers
+        (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers)))
+
 (use-package! ellama
   :defer t
   :init
@@ -55,6 +65,10 @@
 
 (after! evil
   (setq evil-kill-on-visual-paste nil)) ; Don't put overwritten text in the kill ring
+
+(map! :map evil-insert-state-map
+      "C-p" #'evil-previous-line
+      "C-n" #'evil-next-line)
 
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
@@ -125,13 +139,11 @@
 ;; (setq-default auto-fill-function 'do-auto-fill)
 
 (setq user-full-name "Dylan Morgan"
-      user-mail-address "dbmorgan98@gmail.com")
+      user-mail-address "dbmorgan98@protonmail.com")
 
-(use-package! auth-source
-  :defer t
-  :custom
+(after! auth-source
   (setq auth-sources '("~/.authinfo.gpg")
-        auth-source-cache-expiry 21600)) ; Change default to 6 hours to get me through most of a work day
+        auth-source-cache-expiry 21600))  ; Change default to 6 hours to get me through most of a work day
 
 (setq projectile-sort-order 'recentf
       projectile-auto-discover t)
@@ -190,30 +202,30 @@
   (progn
     (setq treemacs-eldoc-display                   'detailed
           treemacs-find-workspace-method           'find-for-file-or-pick-first
+          treemacs-indent-guide-style              'line
           treemacs-missing-project-action          'remove
           treemacs-move-forward-on-expand          t
           treemacs-project-follow-cleanup          t
-          treemacs-indent-guide-style              'line
-          treemacs-recenter-distance               0.2
-          treemacs-recenter-after-file-follow      'always
-          treemacs-recenter-after-tag-follow       'always
-          treemacs-recenter-after-project-jump     'always
-          treemacs-recenter-after-project-expand   'always
           treemacs-project-follow-into-home        t
+          treemacs-recenter-after-file-follow      'always
+          treemacs-recenter-after-project-expand   'always
+          treemacs-recenter-after-project-jump     'always
+          treemacs-recenter-after-tag-follow       'always
+          treemacs-recenter-distance               0.2
           treemacs-show-hidden-files               nil
-          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
           treemacs-select-when-already-in-treemacs 'next-or-back
+          treemacs-sorting                         'alphabetic-numeric-case-insensitive-asc
           treemacs-tag-follow-delay                1.0
           treemacs-width-increment                 5)
 
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
     ;;(treemacs-resize-icons 44)
-    (treemacs-follow-mode t)
-    (treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
+    (treemacs-project-follow-mode t)
+    (treemacs-tag-follow-mode t)
     (when treemacs-python-executable
       (treemacs-git-commit-diff-mode t))
 
@@ -233,6 +245,9 @@
         ;; ("SPC e b"   . treemacs-bookmark)
         ;; ("SPC e f"   . treemacs-find-file)
         ;; ("SPC e F"   . treemacs-find-tag)))
+
+(after! imenu
+  (setq imenu-auto-rescan t))
 
 (setq tramp-default-method "ssh")
 
@@ -477,31 +492,6 @@
 ;; (add-hook! 'prog-mode-hook #'+word-wrap-mode)
 ;; (add-hook! 'sh-mode-hook #'+word-wrap-mode)
 
-;; Uncomment the next line if you are using this from source
-;; (add-to-list 'load-path "<path-to-lsp-docker-dir>")
-
-;; (require 'lsp-docker)
-
-;; (defvar lsp-docker-client-packages
-;;     '(lsp-css lsp-clients lsp-bash lsp-go lsp-html lsp-typescript ; ruff-lsp
-;;       lsp-terraform lsp-clangd))
-
-;; (setq lsp-docker-client-configs
-;;     '((:server-id bash-ls :docker-server-id bashls-docker :server-command "bash-language-server start")
-;;       (:server-id clangd :docker-server-id clangd-docker :server-command "clangd")
-;;       (:server-id css-ls :docker-server-id cssls-docker :server-command "css-languageserver --stdio")
-;;       ;; (:server-id dockerfile-ls :docker-server-id dockerfilels-docker :server-command "docker-langserver --stdio")
-;;       (:server-id gopls :docker-server-id gopls-docker :server-command "gopls")
-;;       (:server-id html-ls :docker-server-id htmls-docker :server-command "html-languageserver --stdio")))
-;;       ;; (:server-id ruff-lsp :docker-server-id pyls-docker :server-command "pyls")))
-;;       ;; (:server-id ts-ls :docker-server-id tsls-docker :server-command "typescript-language-server --stdio")))
-
-;; (require 'lsp-docker)
-;; (lsp-docker-init-clients
-;;   :path-mappings '(("path-to-projects-you-want-to-use" . "~/Programming/projects /"))
-;;   :client-packages lsp-docker-client-packages
-;;   :client-configs lsp-docker-client-configs)
-
 (map! :leader
       :desc "Magit pull" "g p" #'magit-pull
       :desc "Magit push" "g P" #'magit-push
@@ -568,8 +558,10 @@
 (after! julia
   (add-hook! 'before-save-hook #'julia-snail/formatter-format-buffer))
 
+(setq lsp-julia-package-dir nil)
+
 (after! lsp-julia
-  (setq lsp-julia-default-environment "~/.julia/environments/v1.10"))
+  (setq lsp-julia-default-environment "~/.julia/environments/v1.11"))
 
 (add-hook! 'julia-mode-hook #'lsp-mode)
 
@@ -632,6 +624,8 @@
           (?% ("\\rightarrow" "" "")))))
 
 (add-to-list 'company-backends 'company-math-symbols-unicode)
+
+(setq major-mode-remap-alist major-mode-remap-defaults)
 
 (setenv "PATH" (concat (getenv "PATH") ":/usr/bin/"))
 (setq exec-path (append exec-path '("/usr/bin/")))
@@ -699,11 +693,6 @@
 (require 'zotra)
 (setq zotra-backend 'zotra-server)
 (setq zotra-local-server-directory "~/Applications/zotra-server/")
-
-(use-package! lsp-bridge
-  :config
-  (setq lsp-bridge-enable-log nil)
-  (global-lsp-bridge-mode))
 
 (after! dap-mode
   (setq dap-python-debugger 'debugpy))
@@ -1043,9 +1032,9 @@
   (require 'org-src)
   (require 'ob-emacs-lisp)
   (require 'ob-async)
-  (require 'ob-jupyter)
-  (require 'jupyter)
-  (require 'jupyter-org-client)
+  ;; (require 'ob-jupyter)
+  ;; (require 'jupyter)
+  ;; (require 'jupyter-org-client)
 
   (setq org-src-fontify-natively t
         org-src-tab-acts-natively t
@@ -1127,6 +1116,47 @@
          (file+headline "" "Meetings")
          "* %?\n %U"))))
 
+(use-package! oc-csl-activate
+  :after oc
+  :config
+  (setq org-cite-csl-activate-use-document-style t))
+  ;; (defun +org-cite-csl-activate/enable ()
+  ;;   (interactive)
+  ;;   (setq org-cite-activate-processor 'csl-activate)
+  ;;   (add-hook! 'org-mode-hook '((lambda () (cursor-sensor-mode 1)) org-cite-csl-activate-render-all))
+  ;;   (defadvice! +org-cite-csl-activate-render-all-silent (orig-fn)
+  ;;     :around #'org-cite-csl-activate-render-all
+  ;;     (with-silent-modifications (funcall orig-fn)))
+  ;;   (when (eq major-mode 'org-mode)
+  ;;     (with-silent-modifications
+  ;;       (save-excursion
+  ;;         (goto-char (point-min))
+  ;;         (org-cite-activate (point-max)))
+  ;;       (org-cite-csl-activate-render-all)))
+  ;;   (fmakunbound #'+org-cite-csl-activate/enable)))
+
+(after! citar
+  (setq org-cite-global-bibliography '("~/Documents/org/references.bib")))
+        ;; (let ((libfile-search-names '("references.json" "References.json" "references.bib" "References.bib"))
+        ;;       (libfile-dir "~/Zotero")
+        ;;       paths)
+        ;;   (dolist (libfile libfile-search-names)
+        ;;     (when (and (not paths)
+        ;;                (file-exists-p (expand-file-name libfile libfile-dir)))
+        ;;       (setq paths (list (expand-file-name libfile libfile-dir)))))
+        ;;   paths)
+        ;; citar-bibliography org-cite-global-bibliography
+        ;; citar-symbols
+        ;; `((file ,(nerd-icons-faicon "nf-fa-file_o" :face 'nerd-icons-green :v-adjust -0.1) . " ")
+        ;;   (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
+        ;;   (link ,(nerd-icons-octicon "nf-oct-link" :face 'nerd-icons-orange :v-adjust 0.01) . " "))))
+
+(after! oc-csl
+  (setq org-cite-csl-styles-dir "~/Zotero/styles"))
+
+(after! oc
+  (setq org-cite-export-processors '((t csl))))
+
 (use-package! company-org-block
   :custom
   (company-org-block-edit-style 'auto) ;; 'auto, 'prompt, or 'inline
@@ -1139,6 +1169,8 @@
       :localleader
       :desc "org-export-to-org"
       "E" 'org-org-export-to-org
+      :desc "org-export-to-LaTeX-pdf"
+      "L" 'org-latex-export-to-pdf
       :desc "org-export-as-md"
       "M" 'org-pandoc-export-to-markdown)
 
@@ -1235,16 +1267,12 @@
               :filter-return #'org--create-inline-image-advice))
 
 (after! org
-  (jupyter-org-interaction-mode -1)
   (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
                                                        (:session . "py")))
   (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp)
                                                            (bash . t)
                                                            (julia . t)
-                                                           (python . t)
-                                                           (jupyter . t)))
-  (setq jupyter-org-queue-requests t))
-
+                                                           (python . t))))
 
 (map! :map org-mode-map
       :after org
@@ -1265,6 +1293,8 @@
       :desc "Restart to point" "r" #'jupyter-org-restart-kernel-and-execute-to-point
       :desc "Restart execute buffer" "R" #'jupyter-org-restart-kernel-execute-buffer
       :desc "Split block" "s" #'jupyter-org-split-src-block)
+
+(add-to-list 'warning-suppress-types '(org-element org-element-parser))
 
 (use-package! org-journal
   :defer t
@@ -1295,10 +1325,22 @@
   (add-hook! 'org-mode-hook #'turn-on-org-cdlatex)
 
   (defadvice! org-edit-latex-emv-after-insert ()
-    :after #'org-cdlatex-environment-indent
+    :after #' org-cdlatex-environment-indent
     (org-edit-latex-environment)))
 
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
+
+(after! org
+  (setf (alist-get 'dvipng org-preview-latex-process-alist)
+        '(:programs ("lualatex" "dvipng")
+          :description "dvi > png"
+          :message "You need to install the programs: lualatex and dvipng."
+          :image-input-type "dvi"
+          :image-output-type "png"
+          :image-size-adjust (1.0 . 1.0)
+          :latex-compiler ("lualatex --interaction nonstopmode --output-format=dvi --output-directory %o %f")
+          :image-converter ("dvipng -D %D -T tight -o %O %f")
+          :transparent-image-converter ("dvipng -D %D -T tight -bg Transparent -o %O %f"))))
 
 (after! org
   (plist-put org-format-latex-options :scale 1.5)
@@ -1331,19 +1373,23 @@
 ;;                              :snippet "\\ifcsname Code\\endcsname\n  \\let\\oldcode\\Code\\renewcommand{\\Code}{\\microtypesetup{protrusion=false}\\oldcode}\n\\fi"
 ;;                              :after (engraved-code microtype)))
 
-(defadvice! org-latex-example-block-engraved (orig-fn example-block contents info)
-  "Like `org-latex-example-block', but supporting an engraved backend"
-  :around #'org-latex-example-block
-  (let ((output-block (funcall orig-fn example-block contents info)))
-    (if (eq 'engraved (plist-get info :latex-listings))
-        (format "\\begin{Code}[alt]\n%s\n\\end{Code}" output-block)
-      output-block)))
+;; (defadvice! org-latex-example-block-engraved (orig-fn example-block contents info)
+;;   "Like `org-latex-example-block', but supporting an engraved backend"
+;;   :around #'org-latex-example-block
+;;   (let ((output-block (funcall orig-fn example-block contents info)))
+;;     (if (eq 'engraved (plist-get info :latex-listings))
+;;         (format "\\begin{Code}[alt]\n%s\n\\end{Code}" output-block)
+;;       output-block)))
 
-;; (after! org
-;; (setq org-latex-src-block-backend 'listings)
-;; (require 'ox-latex)
-;; (add-to-list 'org-latex-packages-alist '("" "listings"))
-;; (add-to-list 'org-latex-packages-alist '("" "color")))
+(after! org
+    (setq org-latex-src-block-backend 'engraved))
+    ;; (setq org-latex-engraved-options))
+    ;; (setq org-latex-engraved-preamble))
+
+ ;; (setq org-latex-src-block-backend 'listings)
+ ;; (require 'ox-latex)
+ ;; (add-to-list 'org-latex-packages-alist '("" "listings"))
+ ;; (add-to-list 'org-latex-packages-alist '("" "color")))
 
 (after! org
   (setq org-highlight-latex-and-related '(native script entities))
@@ -1589,9 +1635,8 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 (after! org
   (setq org-hide-emphasis-markers t))
 
-(after! org-mode
-  (setq org-pretty-entities t)
-  (setq +org-pretty-mode t))
+(after! org
+  (setq org-pretty-entities t))
 
 (use-package! org-roam
   :defer t
