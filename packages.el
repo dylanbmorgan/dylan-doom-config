@@ -51,18 +51,21 @@
 
 (package! atomic-chrome)
 (package! auctex)
-(package! chatgpt-shell)
+(package! chatgpt-shell
+  :recipe (:host github :repo "xenodium/chatgpt-shell" :files ("chatgpt-shell*.el")))
+(package! circadian
+  :recipe (:host github :repo "guidoschmidt/circadian.el"))
 (package! company-org-block)
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 (package! copilot-chat
   :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
 (package! dall-e-shell)
-(package! ellama)
+;; (package! ellama)
 ;; (package! emacsql :pin "491105a")
 (package! engrave-faces)
 ;; (package! fortpy)
-(package! gptel)
+;; (package! gptel)
 (package! impatient-mode)
 (package! indent-bars)
 (package! jinx)
@@ -103,6 +106,8 @@
 (package! screenshot
   :recipe (:host github
            :repo "tecosaur/screenshot"))
+(package! shell-maker
+  :recipe (:host github :repo "xenodium/shell-maker" :files ("shell-maker*.el")))
 (package! systemd)
 (package! vterm-toggle)
 (package! zotra)

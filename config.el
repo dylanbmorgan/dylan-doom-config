@@ -7,36 +7,78 @@
 
 (add-transient-hook! 'focus-out-hook (atomic-chrome-start-server))
 
-(setq chatgpt-shell-openai-key
-      (lambda ()
-        (auth-source-pick-first-password :host "api.openai.com")))
+;; (setq-default major-mode 'org-mode)
 
-(use-package! org-ai
-  :commands
-  (org-ai-mode
-   org-ai-global-mode)
-  :init
-  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
-  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+(setq doom-fallback-buffer-name "► Doom"
+      +doom-dashboard-name "► Doom")
+
+(setq frame-title-format
+      '(""
+        (:eval
+         (if (s-contains-p org-roam-directory (or buffer-file-name ""))
+             (replace-regexp-in-string
+              ".*/[0-9]*-?" "☰ "
+              (subst-char-in-string ?_ ?  buffer-file-name))
+           "%b"))
+        (:eval
+         (let ((project-name (projectile-project-name)))
+           (unless (string= "-" project-name)
+             (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
+
+(use-package! chatgpt-shell
   :config
-  (setq org-ai-default-chat-model "gpt-4o") ; if you are on the gpt-4 beta:
-  (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
+  (setq chatgpt-shell-openai-key
+        (lambda ()
+          (auth-source-pick-first-password :host "api.openai.com")))
+  (setq chatgpt-shell-model-version "gpt-4o")
+  (setq chatgpt-shell-insert-dividers t))
 
-  ;; Use the default bindings but change the leader
-  ;; (map! :leader
-  ;;       :prefix ("a" . "ai")
-  ;;       :desc "Start on project" "p" #'org-ai-on-project
-  ;;       :desc "Open prompt" "P" #'org-ai-prompt-in-new-buffer
-  ;;       :desc "AI on region" "r" #'org-ai-on-region
-  ;;       :desc "Refactor code" "c" #'org-ai-refactor-code
-  ;;       :desc "Summarise marked text" "s" #'org-ai-summarize
-  ;;       :desc "Switch chat model" "m" #'org-ai-switch-chat-model
-  ;;       :desc "URL request buffer" "!" #'org-ai-open-request-buffer
-  ;;       :desc "Account usage" "$" #'org-ai-open-account-usage-page
-  ;;       :desc "Speech input" "t" #'org-ai-talk-input-toggle
-  ;;       :desc "Speech output" "T" #'org-ai-talk-output-toggle
-  ;;       :desc "Read region" "R" #'org-ai-talk-read-region
-  ;;       :desc "Mark prompt at point" "SPC" #'org-ai-mark-region-at-point))
+(map! :leader
+      (:prefix ("a" . "ai")
+       :desc "chatgpt shell" "a" #'chatgpt-shell
+       :desc "C-c C-c" "C" #'chatgpt-shell-ctrl-c-ctrl-c
+       (:prefix ("d" . "describe")
+        :desc "code" "c" #'chatgpt-shell-describe-code
+        :desc "image" "i" #'chatgpt-shell-describe-image)
+       :desc "edit block" "e" #'chatgpt-shell-edit-block-at-point
+       :desc "execute babel" "B" #'chatgpt-shell-execute-babel-block-action-at-point
+       :desc "execute block" "b" #'chatgpt-shell-execute-block-action-at-point
+       :desc "fix error" "f" #'chatgpt-shell-fix-error-at-point
+       :desc "create unit test" "u" #'chatgpt-shell-generate-unit-test
+       :desc "interrupt" "I" #'chatgpt-shell-interrupt
+       :desc "mark dwim" "M" #'chatgpt-shell-mark-at-point-dwim
+       :desc "version" "V" #'chatgpt-shell-model-version
+       :desc "next" "n" #'chatgpt-shell-next-item
+       :desc "previous" "N" #'chatgpt-shell-previous-item
+       (:prefix ("p" . "prompt compose")
+        :desc "prompt" "p" #'chatgpt-shell-prompt
+        :desc "from kill-ring" "k" #'chatgpt-shell-prompt-appending-kill-ring
+        :desc "cancel" "Q" #'chatgpt-shell-prompt-compose-cancel
+        :desc "insert block" "i" #'chatgpt-shell-prompt-compose-insert-block-at-point
+        :desc "next history" "h" #'chatgpt-shell-prompt-compose-next-history
+        :desc "next item" "n" #'chatgpt-shell-prompt-compose-next-item
+        :desc "buffer" "b" #'chatgpt-shell-prompt-compose-other-buffer
+        :desc "previous history" "H" #'chatgpt-shell-prompt-compose-previous-history
+        :desc "previous item" "N" #'chatgpt-shell-prompt-compose-previous-item
+        :desc "quit" "q" #'chatgpt-shell-prompt-compose-quit-and-close-frame
+        :desc "refresh" "R" #'chatgpt-shell-prompt-compose-refresh
+        :desc "reply" "r" #'chatgpt-shell-prompt-compose-reply
+        :desc "search history" "s" #'chatgpt-shell-prompt-compose-search-history
+        :desc "send" "S" #'chatgpt-shell-prompt-compose-send-buffer
+        :desc "swap prompt" "P" #'chatgpt-shell-prompt-compose-swap-system-prompt
+        :desc "swap model" "m" #'chatgpt-shell-prompt-compose-swap-model-version)
+       :desc "insert" "i" #'chatgpt-shell-quick-insert
+       :desc "refactor code" "r" #'chatgpt-shell-refactor-code
+       :desc "transcript restore" "T" #'chatgpt-shell-restore-session-from-transcript
+       :desc "transcript save" "t" #'chatgpt-shell-save-session-transcript
+       :desc "history search" "h" #'chatgpt-shell-search-history
+       :desc "send and review" "S" #'chatgpt-shell-send-and-review-region
+       :desc "send" "s" #'chatgpt-shell-send-region
+       :desc "swap model" "m" #'chatgpt-shell-swap-model
+       :desc "swap prompt" "P" #'chatgpt-shell-swap-system-prompt
+       :desc "view" "v" #'chatgpt-shell-view-at-point
+       :desc "view code" "V" #'chatgpt-shell-view-block-at-point
+       :desc "git commit" "g" #'chatgpt-shell-write-git-commit))
 
 (setq which-key-idle-delay 0.2)
 
@@ -142,8 +184,7 @@
       user-mail-address "dbmorgan98@protonmail.com")
 
 (after! auth-source
-  (setq auth-sources '("~/.authinfo.gpg")
-        auth-source-cache-expiry 21600))  ; Change default to 6 hours to get me through most of a work day
+  (setq auth-source-cache-expiry 21600))  ; Change default to 6 hours to get me through most of a work day
 
 (setq projectile-sort-order 'recentf
       projectile-auto-discover t)
@@ -391,20 +432,15 @@
   ;; (centaur-tabs-change-fonts "P22 Underground Book" 160))
 ;; (setq x-underline-at-descent-line t)
 
-;; (use-package autothemer
+(setq calendar-latitude 52.373199)
+(setq calendar-longitude -1.261740)
 
-(defun random-choice (items)
-  (let* ((size (length items))
-         (index (random size)))
-    (nth index items)))
-
-(setq random-theme (random-choice '(doom-dracula doom-palenight doom-one)))
-
-;; (setq random-theme (random-choice '(doom-dracula doom-snazzy doom-palenight doom-moonlight doom-vibrant doom-laserwave doom-horizon doom-one doom-city-lights doom-wilmersdorf catppuccin-1 catppuccin-2))) ; doom-tokyo-night)))
-
-(cond ((string= random-theme "catppuccin-1") (setq doom-theme 'catppuccin-macchiato))
-      ((string= random-theme "catppuccin-2") (setq doom-theme 'catppuccin-frappe))
-      (t (setq doom-theme random-theme)))
+(use-package! circadian
+  :ensure t
+  :config
+  (setq circadian-themes '((:sunrise . doom-dracula)
+                           (:sunset . doom-one)))
+  (circadian-setup))
 
 ;; (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
 ;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
