@@ -5,6 +5,7 @@
  ;; If there is more than one, they won't work right.
  '(org-safe-remote-resources
    '("\\`https://fniessen\\.github\\.io/org-html-themes/org/theme-readtheorg\\.setup\\'"))
+ '(package-selected-packages '(color-theme-sanityinc-tomorrow synosaurus))
  '(safe-local-variable-values '((TeX-master . "../warwickthesis"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

@@ -25,16 +25,25 @@
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
 
+(map! :leader
+      :prefix "b"
+      :desc "Flycheck errors" "e" #'consult-flycheck
+      :desc "Focus lines" "F" #'consult-focus-lines
+      :desc "History" "h" #'consult-history)
+
 (use-package! chatgpt-shell
   :config
   (setq chatgpt-shell-openai-key
         (lambda ()
           (auth-source-pick-first-password :host "api.openai.com")))
+  (setq chatgpt-shell-anthropic-key
+        (lambda ()
+          (auth-source-pick-first-password :host "api.anthropic.com")))
   (setq chatgpt-shell-model-version "gpt-4o")
   (setq chatgpt-shell-insert-dividers t))
 
 (map! :leader
-      (:prefix ("a" . "ai")
+      (:prefix-map ("a" . "ai")
        :desc "chatgpt shell" "a" #'chatgpt-shell
        :desc "C-c C-c" "C" #'chatgpt-shell-ctrl-c-ctrl-c
        (:prefix ("d" . "describe")
@@ -43,15 +52,17 @@
        :desc "edit block" "e" #'chatgpt-shell-edit-block-at-point
        :desc "execute babel" "B" #'chatgpt-shell-execute-babel-block-action-at-point
        :desc "execute block" "b" #'chatgpt-shell-execute-block-action-at-point
-       :desc "fix error" "f" #'chatgpt-shell-fix-error-at-point
+       :desc "fix error" "E" #'chatgpt-shell-fix-error-at-point
        :desc "create unit test" "u" #'chatgpt-shell-generate-unit-test
        :desc "interrupt" "I" #'chatgpt-shell-interrupt
+       :desc "awesome prompts" "A" #'chatgpt-shell-load-awesome-prompts
        :desc "mark dwim" "M" #'chatgpt-shell-mark-at-point-dwim
        :desc "version" "V" #'chatgpt-shell-model-version
        :desc "next" "n" #'chatgpt-shell-next-item
        :desc "previous" "N" #'chatgpt-shell-previous-item
+       :desc "prompt minibuffer" "f" #'chatgpt-shell-prompt
        (:prefix ("p" . "prompt compose")
-        :desc "prompt" "p" #'chatgpt-shell-prompt
+        :desc "prompt" "p" #'chatgpt-shell-prompt-compose
         :desc "from kill-ring" "k" #'chatgpt-shell-prompt-appending-kill-ring
         :desc "cancel" "Q" #'chatgpt-shell-prompt-compose-cancel
         :desc "insert block" "i" #'chatgpt-shell-prompt-compose-insert-block-at-point
@@ -98,11 +109,6 @@
         dirvish-preview-dispatchers
         (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers)))
 
-(use-package! ellama
-  :defer t
-  :init
-  (setopt ellama-keymap-prefix "C-c e"))
-
 (setq eros-eval-result-prefix "⟹ ") ; default =>
 
 (after! evil
@@ -112,15 +118,89 @@
       "C-p" #'evil-previous-line
       "C-n" #'evil-next-line)
 
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+(use-package! nov
+  :mode ("\\.epub\\'" . nov-mode)
+  :config
+  ;; (map! :map nov-mode-map
+  ;;       :n "RET" #'nov-scroll-up)
 
+  (advice-add 'nov-render-title :override #'ignore)
+
+  (defun +nov-mode-setup ()
+    "Tweak nov-mode to our liking."
+    ;; (face-remap-add-relative 'variable-pitch
+    ;;                          :family "Merriweather"
+    ;;                          :height 1.4
+    ;;                          :width 'semi-expanded)
+    (face-remap-add-relative 'default :height 1.3)
+    (variable-pitch-mode 1)
+    (setq-local line-spacing 0.2
+                next-screen-context-lines 4
+                shr-use-colors nil)
+    (when (require 'visual-fill-column nil t)
+      (setq-local visual-fill-column-center-text t
+                  visual-fill-column-width 64
+                  nov-text-width 106)
+      (visual-fill-column-mode 1))
+    (when (featurep 'hl-line-mode)
+      (hl-line-mode -1))
+    ;; Re-render with new display settings
+    (nov-render-document)
+    ;; Look up words with the dictionary.
+    (add-to-list '+lookup-definition-functions #'+lookup/dictionary-definition))
+
+  (add-hook 'nov-mode-hook #'+nov-mode-setup))
+
+(use-package nov-xwidget
+  :after nov
+  :config
+  (add-hook! 'nov-mode-hook #'nov-xwidget-inject-all-files))
+
+(after! doom-modeline
+  (defvar doom-modeline-nov-title-max-length 40)
+  (doom-modeline-def-segment nov-author
+    (propertize
+     (cdr (assoc 'creator nov-metadata))
+     'face (doom-modeline-face 'doom-modeline-project-parent-dir)))
+  (doom-modeline-def-segment nov-title
+    (let ((title (or (cdr (assoc 'title nov-metadata)) "")))
+      (if (<= (length title) doom-modeline-nov-title-max-length)
+          (concat " " title)
+        (propertize
+         (concat " " (truncate-string-to-width title doom-modeline-nov-title-max-length nil nil t))
+         'help-echo title))))
+  (doom-modeline-def-segment nov-current-page
+    (let ((words (count-words (point-min) (point-max))))
+      (propertize
+       (format " %d/%d"
+               (1+ nov-documents-index)
+               (length nov-documents))
+       'face (doom-modeline-face 'doom-modeline-info)
+       'help-echo (if (= words 1) "1 word in this chapter"
+                    (format "%s words in this chapter" words)))))
+  (doom-modeline-def-segment scroll-percentage-subtle
+    (concat
+     (doom-modeline-spc)
+     (propertize (format-mode-line '("" doom-modeline-percent-position "%%"))
+                 'face (doom-modeline-face 'shadow)
+                 'help-echo "Buffer percentage")))
+
+  (doom-modeline-def-modeline 'nov
+    '(workspace-name window-number nov-author nov-title nov-current-page scroll-percentage-subtle))
+    ;; '(media-player misc-info major-mode time))
+
+  (add-to-list 'doom-modeline-mode-alist '(nov-mode . nov)))
+
+;; Change the default shell to fish
 (setq shell-file-name (executable-find "bash"))
 (setq vterm-shell (executable-find "fish"))
 (setq explicit-shell-file-name (executable-find "fish"))
 
+;; Use the system trash
 (setq delete-by-moving-to-trash t
       x-stretch-cursor t)
 
+;; General file settings
 (setq undo-limit 80000000
       evil-want-fine-undo t
       auto-save-default t
@@ -131,32 +211,28 @@
 
 (global-subword-mode t)
 
-(map! "C-s" #'swiper)
-(map! "C-M-s" #'swiper-thing-at-point)
-(map! "C-S-s" #'isearch-forward-regexp)
-(map! "C-S-r" #'isearch-backward-regexp)
+;; Set vertico/consult commands
+(map! "C-s" #'+default/search-buffer)
+(map! "C-M-s" #'+vertico/search-symbol-at-point)
+(map! :leader
+      :prefix "s"
+      :desc "fd file" "f" #'+vertico/consult-fd-or-find
+      :desc "ripgrep file" "g" #'consult-ripgrep
+      :desc "Search help" "h" #'consult-info
+      :desc "Search man" "M" #'consult-man
+      :desc "Outline" "o" #'consult-outline)
 
 ;; TODO
+;; Use delete to move back a page in which-key
 ;; (map! which-key-mode-map
 ;;       "DEL" #'which-key-undo)
 
+;; Disable toolbar on mac
 (when (string= (system-name) "maccie")
   (add-hook 'doom-after-init-hook (lambda () (tool-bar-mode 1) (tool-bar-mode 0))))
 
+;; Enable nicer scrolling
 (pixel-scroll-precision-mode)
-
-(use-package! gptel
-  :commands gptel gptel-menu gptel-mode gptel-send gptel-set-tpic
-  :config
-  ;;  (setq! gptel-api-key "your key"))
-  (setq gptel-model "zephyr:latest"
-        gptel-backend (gptel-make-ollama "Ollama"
-                        :host "localhost:11434"
-                        :stream t
-                        :models '("zephyr:latest"))))
-
-(add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
-(add-hook 'gptel-post-response-functions 'gptel-end-oF-response) ; TODO Bind key to end of response
 
 ;; (use-package! languagetool
 ;;   :defer t
@@ -191,14 +267,6 @@
 
 (setq projectile-enable-caching t)
 (setq projectile-file-exists-remote-cache-expire (* 10 60))
-
-(map! :leader
-      (:prefix-map ("p" . "project")
-       :desc "Search project rg" "h" #'counsel-projectile-rg))
-
-(map! :leader
-      (:prefix-map ("p" . "project")
-       :desc "Search project ag" "H" #'counsel-projectile-ag))
 
 (after! spell-fu
   (setq ispell-personal-dictionary "~/.config/emacs/.local/etc/ispell/.pws")
@@ -324,14 +392,8 @@
       "C-<up>"         #'+evil/window-move-up
       "C-<right>"      #'+evil/window-move-right)
 
-;; (map! :map switch-workspace-buffer)
-;; (map! :leader
-;;       (:prefix-map ("," . "Switch buffer")
-;;        :desc "Search project rg" "h" #'counsel-projectile-rg))
-
 (map! :leader
-      :desc "Switch buffer" "," #'counsel-switch-buffer
-      :desc "Switch workspace buffer" "\\" #'persp-switch-to-buffer)
+      :desc "Switch workspace buffer" "," #'+vertico/switch-workspace-buffer)
 
 (setq yas-triggers-in-field t)
 
@@ -418,7 +480,101 @@
     '(bar window-number pdf-pages pdf-icon buffer-name)
     '(misc-info matches major-mode process vcs)))
 
-(setq fancy-splash-image "~/.doom.d/splash/black-doom-hole.png")
+(defvar fancy-splash-image-template
+  (expand-file-name "splash/doom-emacs-splash-template.svg" doom-private-dir)
+  "Default template svg used for the splash image, with substitutions from ")
+
+(defvar fancy-splash-sizes
+  `((:height 500 :min-height 50 :padding (0 . 2))
+    (:height 450 :min-height 42 :padding (2 . 4))
+    (:height 400 :min-height 35 :padding (3 . 3))
+    (:height 350 :min-height 28 :padding (3 . 3))
+    (:height 200 :min-height 20 :padding (2 . 2))
+    (:height 150  :min-height 15 :padding (2 . 1))
+    (:height 100  :min-height 13 :padding (2 . 1))
+    (:height 75  :min-height 12 :padding (2 . 1))
+    (:height 50  :min-height 10 :padding (1 . 0))
+    (:height 1   :min-height 0  :padding (0 . 0)))
+  "list of plists with the following properties
+  :height the height of the image
+  :min-height minimum `frame-height' for image
+  :padding `+doom-dashboard-banner-padding' (top . bottom) to apply
+  :template non-default template file
+  :file file to use instead of template")
+
+(defvar fancy-splash-template-colours
+  '(("$color1" . functions) ("$color2" . keywords) ("$color3" .  highlight) ("$color4" . bg) ("$color5" . bg) ("$color6" . base0))
+  ;; 1: Text up, 2: Text low, 3: upper outlines, 4: shadow, 5: background, 6: gradient to middle
+  "list of colour-replacement alists of the form (\"$placeholder\" . 'theme-colour) which applied the template")
+
+(unless (file-exists-p (expand-file-name "theme-splashes" doom-cache-dir))
+  (make-directory (expand-file-name "theme-splashes" doom-cache-dir) t))
+
+(defun fancy-splash-filename (theme-name height)
+  (expand-file-name (concat (file-name-as-directory "theme-splashes")
+                            theme-name
+                            "-" (number-to-string height) ".svg")
+                    doom-cache-dir))
+
+(defun fancy-splash-clear-cache ()
+  "Delete all cached fancy splash images"
+  (interactive)
+  (delete-directory (expand-file-name "theme-splashes" doom-cache-dir) t)
+  (message "Cache cleared!"))
+
+(defun fancy-splash-generate-image (template height)
+  "Read TEMPLATE and create an image if HEIGHT with colour substitutions as
+   described by `fancy-splash-template-colours' for the current theme"
+  (with-temp-buffer
+    (insert-file-contents template)
+    (re-search-forward "$height" nil t)
+    (replace-match (number-to-string height) nil nil)
+    (replace-match (number-to-string height) nil nil)
+    (dolist (substitution fancy-splash-template-colours)
+      (goto-char (point-min))
+      (while (re-search-forward (car substitution) nil t)
+        (replace-match (doom-color (cdr substitution)) nil nil)))
+    (write-region nil nil
+                  (fancy-splash-filename (symbol-name doom-theme) height) nil nil)))
+
+(defun fancy-splash-generate-images ()
+  "Perform `fancy-splash-generate-image' in bulk"
+  (dolist (size fancy-splash-sizes)
+    (unless (plist-get size :file)
+      (fancy-splash-generate-image (or (plist-get size :template)
+                                       fancy-splash-image-template)
+                                   (plist-get size :height)))))
+
+(defun ensure-theme-splash-images-exist (&optional height)
+  (unless (file-exists-p (fancy-splash-filename
+                          (symbol-name doom-theme)
+                          (or height
+                              (plist-get (car fancy-splash-sizes) :height))))
+    (fancy-splash-generate-images)))
+
+(defun get-appropriate-splash ()
+  (let ((height (frame-height)))
+    (cl-some (lambda (size) (when (>= height (plist-get size :min-height)) size))
+             fancy-splash-sizes)))
+
+(setq fancy-splash-last-size nil)
+(setq fancy-splash-last-theme nil)
+(defun set-appropriate-splash (&rest _)
+  (let ((appropriate-image (get-appropriate-splash)))
+    (unless (and (equal appropriate-image fancy-splash-last-size)
+                 (equal doom-theme fancy-splash-last-theme)))
+    (unless (plist-get appropriate-image :file)
+      (ensure-theme-splash-images-exist (plist-get appropriate-image :height)))
+    (setq fancy-splash-image
+          (or (plist-get appropriate-image :file)
+              (fancy-splash-filename (symbol-name doom-theme) (plist-get appropriate-image :height))))
+    (setq +doom-dashboard-banner-padding (plist-get appropriate-image :padding))
+    (setq fancy-splash-last-size appropriate-image)
+    (setq fancy-splash-last-theme doom-theme)
+    (+doom-dashboard-reload)))
+
+(add-hook 'window-size-change-functions #'set-appropriate-splash)
+(add-hook 'doom-load-theme-hook #'set-appropriate-splash)
 
 (after! centaur-tabs
   (centaur-tabs-mode -1)
@@ -458,7 +614,6 @@
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :defer t
   :hook ((prog-mode . copilot-mode)
          (sh-mode . copilot-mode))
   :bind (:map copilot-completion-map
@@ -467,12 +622,19 @@
               ("C-TAB" . 'copilot-accept-completion-by-line)
               ("C-<tab>" . 'copilot-accept-completion-by-line)
               ("C-M-TAB" . 'copilot-accept-completion)
-              ("C-M-<tab>" . 'copilot-accept-completion)))
-  ;; :config
-  ;; (when (string= (system-name) "apollo")
-  ;;   (setq copilot-node-executable "~/.local/share/nvm/v17.9.1/bin/node"))
-  ;; (when (string= (system-name) "maccie")
-  ;;   (setq copilot-node-executable "/Users/dylanmorgan/.local/share/nvm/v17.9.1/bin/node")))
+              ("C-M-<tab>" . 'copilot-accept-completion))
+  :config
+  (setq copilot-indent-offset-warning-disable t)
+  (add-to-list 'copilot-indentation-alist '(prog-mode 4))
+  (add-to-list 'copilot-indentation-alist '(sh-mode 2))
+  (add-to-list 'copilot-indentation-alist '(fish-mode 4))
+  (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
+  (add-to-list 'copilot-indentation-alist '(text-mode 2))
+  (add-to-list 'copilot-indentation-alist '(tex-mode 2))
+  (add-to-list 'copilot-indentation-alist '(latex-mode 2))
+  (add-to-list 'copilot-indentation-alist '(LaTeX-mode 2))
+  (add-to-list 'copilot-indentation-alist '(org-mode 2))
+  (add-to-list 'copilot-indentation-alist '(markdown-mode 2)))
 
 (map! :leader
       :desc "Toggle Copilot Completion" "c G" #'copilot-mode)
@@ -671,7 +833,7 @@
 
 (setq TeX-command-default "LaTeXMk"
       TeX-command "latexmk"
-      TeX-command-extra-options "-bibtex -pdflua -ps-"
+      TeX-command-extra-options "-bibtex -lualatex -ps-"
       +latex-viewers '(pdf-tools skim evince sumatrapdf zathura okular))
 
 ;; (use-package! lsp-ltex
@@ -774,18 +936,16 @@
         lsp-modeline-diagnostics-enable t
         lsp-diagnostics-provider :auto
         lsp-eldoc-enable-hover t
-        lsp-completion-provider :auto
+        ;; lsp-completion-provider :none
         lsp-completion-show-detail t
         lsp-completion-show-kind t
-        lsp-signature-mode t
-        lsp-signature-auto-activate t
+        ;; lsp-signature-auto-activate t
         lsp-signature-render-documentation t
-        lsp-idle-delay 1.0))
+        lsp-idle-delay 0.75))
 
 (after! lsp-mode
   (setq lsp-ui-sideline-enable t
-        ;; lsp-ui-sideline-mode 1
-        lsp-ui-sideline-delay 1
+        lsp-ui-sideline-delay 0.5
         lsp-ui-sideline-show-symbol t
         lsp-ui-sideline-show-diagnostics t
         lsp-ui-sideline-show-hover t
@@ -796,22 +956,23 @@
         lsp-ui-doc-enable t
         ;; lsp-ui-doc-frame-mode t ; This breaks 'q' for some reason
         lsp-ui-doc-delay 1
-        lsp-ui-doc-show-with-cursor t
+        lsp-ui-doc-show-with-cursor nil
         lsp-ui-doc-show-with-mouse t
-        lsp-ui-doc-header t
+        ;; lsp-ui-doc-header t
         lsp-ui-doc-use-childframe t
         lsp-ui-doc-position 'top
-        lsp-ui-doc-max-height 25
-        lsp-ui-doc-use-webkit t
+        lsp-ui-doc-max-height 40
+        lsp-ui-doc-max-width 100
+        lsp-ui-doc-use-webkit nil
         lsp-ui-imenu-enable t
         lsp-ui-imenu-kind-position 'left
         lsp-ui-imenu-buffer-position 'right
-        lsp-ui-imenu-window-width 35
+        lsp-ui-imenu-window-width 40
         lsp-ui-imenu-auto-refresh t
         lsp-ui-imenu-auto-refresh-delay 1.0)
 
-  (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-focus-frame)
-  (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-sideline-execute-code-action))
+  (map! :map lsp-ui-mode-map "C-," #'lsp-ui-doc-toggle)
+  (map! :map lsp-ui-mode-map "C-;" #'lsp-ui-doc-focus-frame))
 
 ;; (map! :after lsp-mode
 ;;       :map lsp-mode-map
@@ -855,7 +1016,7 @@
 
 (use-package! grip-mode
   :defer t
-  :init
+  :config
   (let ((credential (auth-source-user-and-password "api.github.com")))
     (setq grip-github-user (car credential)
           grip-github-password (cadr credential)))
@@ -1020,6 +1181,13 @@
         :localleader
         :desc "poetry" "p" #'poetry))
 
+(add-hook! 'python-mode #'uv-mode-auto-activate-hook)
+
+(map! :map python-mode-map
+      :localleader
+      :desc "uv virtualenv" "u" #'uv-mode-set
+      :desc "uv unset virtualenv" "U" #'uv-mode-unset)
+
 (after! rustic
    (setq rustic-format-on-save t)
    (setq rustic-lsp-server 'rust-analyzer))
@@ -1153,39 +1321,47 @@
          "* %?\n %U"))))
 
 (use-package! oc-csl-activate
-  :after oc
+  :after (oc citar)
+  :hook (org-mode . (lambda ()
+                      (cursor-sensor-mode 1)
+                      (org-cite-csl-activate-render-all)))
   :config
-  (setq org-cite-csl-activate-use-document-style t))
-  ;; (defun +org-cite-csl-activate/enable ()
-  ;;   (interactive)
-  ;;   (setq org-cite-activate-processor 'csl-activate)
-  ;;   (add-hook! 'org-mode-hook '((lambda () (cursor-sensor-mode 1)) org-cite-csl-activate-render-all))
-  ;;   (defadvice! +org-cite-csl-activate-render-all-silent (orig-fn)
-  ;;     :around #'org-cite-csl-activate-render-all
-  ;;     (with-silent-modifications (funcall orig-fn)))
-  ;;   (when (eq major-mode 'org-mode)
-  ;;     (with-silent-modifications
-  ;;       (save-excursion
-  ;;         (goto-char (point-min))
-  ;;         (org-cite-activate (point-max)))
-  ;;       (org-cite-csl-activate-render-all)))
-  ;;   (fmakunbound #'+org-cite-csl-activate/enable)))
+  (setq org-cite-activate-processor 'csl-activate
+        org-cite-csl-activate-use-document-style t
+        org-cite-csl-activate-use-document-style t
+        org-cite-csl-activate-use-document-locale t
+        org-cite-csl-activate-use-citar-cache t))
+
+;; (defun +org-cite-csl-activate/enable ()
+;;   (interactive)
+;;   (setq org-cite-activate-processor 'csl-activate)
+;;   (add-hook! 'org-mode-hook '((lambda () (cursor-sensor-mode 1)) org-cite-csl-activate-render-all))
+;;   (defadvice! +org-cite-csl-activate-render-all-silent (orig-fn)
+;;     :around #'org-cite-csl-activate-render-all
+;;     (with-silent-modifications (funcall orig-fn)))
+;;   (when (eq major-mode 'org-mode)
+;;     (with-silent-modifications
+;;       (save-excursion
+;;         (goto-char (point-min))
+;;         (org-cite-activate (point-max)))
+;;       (org-cite-csl-activate-render-all)))
+;;   (fmakunbound #'+org-cite-csl-activate/enable)))
 
 (after! citar
-  (setq org-cite-global-bibliography '("~/Documents/org/references.bib")))
-        ;; (let ((libfile-search-names '("references.json" "References.json" "references.bib" "References.bib"))
-        ;;       (libfile-dir "~/Zotero")
-        ;;       paths)
-        ;;   (dolist (libfile libfile-search-names)
-        ;;     (when (and (not paths)
-        ;;                (file-exists-p (expand-file-name libfile libfile-dir)))
-        ;;       (setq paths (list (expand-file-name libfile libfile-dir)))))
-        ;;   paths)
-        ;; citar-bibliography org-cite-global-bibliography
-        ;; citar-symbols
-        ;; `((file ,(nerd-icons-faicon "nf-fa-file_o" :face 'nerd-icons-green :v-adjust -0.1) . " ")
-        ;;   (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
-        ;;   (link ,(nerd-icons-octicon "nf-oct-link" :face 'nerd-icons-orange :v-adjust 0.01) . " "))))
+  (setq org-cite-global-bibliography
+        (let ((libfile-search-names '("references.bib" "references.json"))
+              (libfile-dir "~/Documents/org/")
+              paths)
+          (dolist (libfile libfile-search-names)
+            (when (and (not paths)
+                       (file-exists-p (expand-file-name libfile libfile-dir)))
+              (setq paths (list (expand-file-name libfile libfile-dir)))))
+          paths)
+        citar-bibliography org-cite-global-bibliography
+        citar-symbols
+        `((file ,(nerd-icons-faicon "nf-fa-file_o" :face 'nerd-icons-green :v-adjust -0.1) . " ")
+          (note ,(nerd-icons-octicon "nf-oct-note" :face 'nerd-icons-blue :v-adjust -0.3) . " ")
+          (link ,(nerd-icons-octicon "nf-oct-link" :face 'nerd-icons-orange :v-adjust 0.01) . " "))))
 
 (after! oc-csl
   (setq org-cite-csl-styles-dir "~/Zotero/styles"))
@@ -1268,9 +1444,10 @@
       "r" 'org-header-with-readme)
 
 (setq org-directory "~/Documents/org/"
+      org-id-locations-file "~/.config/emacs/.local/cache/.org-id-locations"
       org-use-property-inheritance t
       org-list-allow-alphabetical t
-      ;; org-export-in-background t
+      org-export-in-background t
       org-fold-catch-invisible-edits 'smart)
 
 (use-package! org-special-block-extras
@@ -1367,6 +1544,7 @@
 (add-hook! 'org-mode-hook #'org-fragtog-mode)
 
 (after! org
+  (setq org-preview-latex-default-process 'dvisvgm)
   (setf (alist-get 'dvipng org-preview-latex-process-alist)
         '(:programs ("lualatex" "dvipng")
           :description "dvi > png"
@@ -1376,9 +1554,29 @@
           :image-size-adjust (1.0 . 1.0)
           :latex-compiler ("lualatex --interaction nonstopmode --output-format=dvi --output-directory %o %f")
           :image-converter ("dvipng -D %D -T tight -o %O %f")
-          :transparent-image-converter ("dvipng -D %D -T tight -bg Transparent -o %O %f"))))
+          :transparent-image-converter ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
 
-(after! org
+        (alist-get 'dvisvgm org-preview-latex-process-alist)
+        '(:programs ("lualatex" "dvisvgm")
+          :description "dvi > svg"
+          :message "you need to install the programs: lualatex and dvisvgm."
+          :image-input-type "dvi"
+          :image-output-type "svg"
+          :image-size-adjust (2.0 . 2.0)
+          :latex-compiler ("lualatex --interaction nonstopmode --output-format=dvi -output-directory %o %f")
+          :image-converter ("dvisvgm %f --no-fonts --exact-bbox --scale=%S --output=%O"))
+          ;; :transparent-image-converter ("dvisvgm %f --no-fonts --exact-bbox --scale=%S --output=%O"))
+
+        (alist-get 'imagemagick org-preview-latex-process-alist)
+        '(:programs ("lualatex" "convert")
+          :description "pdf > png"
+          :message "you need to install the programs: latex and imagemagick."
+          :image-input-type "pdf"
+          :image-output-type "png"
+          :image-size-adjust (1.0 . 1.0)
+          :latex-compiler ("lualatex --interaction nonstopmode -output-directory %o %f")
+          :image-converter ("magick convert -density %D -trim -antialias %f -quality 100 %O")))
+
   (plist-put org-format-latex-options :scale 1.5)
   (plist-put org-format-latex-options :html-scale 1.0)
   ;; (plist-put org-format-latex-options :foreground "white")
@@ -1692,7 +1890,7 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
   ;; a hookable mode anymore, you're advised to pick something yourself
   ;; if you don't care about startup time, use
   ;; :hook (after-init . org-roam-ui-mode)
-  :init (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url)
+  ;; :init (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url)
   ;; :hook (org-roam-mode . org-roam-ui-mode)
   :config
   (setq org-roam-ui-sync-theme t
@@ -1817,20 +2015,20 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
       "'" nil
       "`" #'org-edit-special)
 
-(use-package! toc-org
-  :commands toc-org-enable
-  :init (add-hook 'org-mode-hook 'toc-org-enable))
+;; (use-package! toc-org
+;;   :commands toc-org-enable
+;;   :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(after! org
-  (defun add-toc ()
-    (interactive)
-    (insert "* Table of Contents :toc:\n\n")))
+;; (after! org
+;;   (defun add-toc ()
+;;     (interactive)
+;;     (insert "* Table of Contents :toc:\n\n")))
 
-(map! :map org-mode-map
-      :after org
-      :localleader
-      :desc "insert-toc"
-      "C" #'add-toc)
+;; (map! :map org-mode-map
+;;       :after org
+;;       :localleader
+;;       :desc "insert-toc"
+;;       "C" #'add-toc)
 
 (after! org
   (setq org-log-done 'time)
@@ -1898,7 +2096,6 @@ JUSTIFICATION is a symbol for 'left, 'center or 'right."
 
 (use-package! vterm
   :after vterm
-  :init
   :config
   (setq vterm-kill-buffer-on-exit t
         vterm-always-compile-module t

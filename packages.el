@@ -51,6 +51,7 @@
 
 (package! atomic-chrome)
 (package! auctex)
+(package! catppuccin-theme)
 (package! chatgpt-shell
   :recipe (:host github :repo "xenodium/chatgpt-shell" :files ("chatgpt-shell*.el")))
 (package! circadian
@@ -60,7 +61,6 @@
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 (package! copilot-chat
   :recipe (:host github :repo "chep/copilot-chat.el" :files ("*.el")))
-(package! dall-e-shell)
 ;; (package! ellama)
 ;; (package! emacsql :pin "491105a")
 (package! engrave-faces)
@@ -79,6 +79,9 @@
 (package! live-py-mode)
 ;; (package! lsp-julia)
 ;; (package! moom)
+(package! nov)
+(package! no-xwidget
+  :recipe (:host github :repo "chenyanming/nov-xwidget"))
 (package! numpydoc)
 (package! obsidian)
 (package! org-ai)
@@ -108,6 +111,9 @@
            :repo "tecosaur/screenshot"))
 (package! shell-maker
   :recipe (:host github :repo "xenodium/shell-maker" :files ("shell-maker*.el")))
+(package! synosaurus)
 (package! systemd)
+(package! uv-mode
+  :recipe (:host github :repo "z80dev/uv-mode" :files ("*.el")))
 (package! vterm-toggle)
 (package! zotra)

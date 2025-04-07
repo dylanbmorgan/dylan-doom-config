@@ -26,18 +26,18 @@
        (company           ; the ultimate code completion backend
         +childframe)
        ;;(corfu +orderless)  ; complete with cap(f), cape and a flying feather!
-       (ivy
-        +fuzzy
-        +icons
-        +prescient)      ; a search engine for love and life
+       ;; (ivy
+       ;;  +fuzzy
+       ;;  +icons
+       ;;  +prescient)      ; a search engine for love and life
        ;;ido               ; the other *other* search engine...
        ;; (helm
        ;;  +childframe
        ;;  +fuzzy
        ;;  +icons)              ; the *other* search engine for love and life
-       ;; (vertico           ; the search engine of the future
-       ;;  +icons
-       ;;  +childframe)
+       (vertico           ; the search engine of the future
+        +icons)
+       ;; +childframe
 
        :ui
        ;; deft              ; notational velocity for Emacs
